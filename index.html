@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palabra Arcade</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ═══ HUB ═══ -->
+<div id="screen-hub" class="screen">
+  <header id="hub-header">
+    <div id="hub-avatar"></div>
+    <div class="hub-id">
+      <div class="hub-name-row">
+        <span id="hub-name"></span>
+        <span id="hub-level" class="level-badge"></span>
+        <span id="hub-streak" class="streak"></span>
+      </div>
+      <div class="xp-track"><div id="hub-xpbar"></div></div>
+      <span id="hub-xptext" class="xp-text"></span>
+    </div>
+    <div class="hub-actions">
+      <select id="profile-select" title="Perfil"></select>
+      <button id="btn-export" class="icon-btn" title="Exportar partida guardada">💾</button>
+      <button id="btn-import" class="icon-btn" title="Importar partida guardada">📂</button>
+      <input id="import-file" type="file" accept=".json" class="hidden">
+    </div>
+  </header>
+
+  <h1 class="hub-title">PALABRA<span class="accent">ARCADE</span></h1>
+  <p class="hub-tagline">Un cerebro, muchos juegos. Todo lo que aprendas te sigue.</p>
+
+  <div id="hub-stats"></div>
+
+  <div id="hub-fading" class="fading-alert hidden">
+    <span>⚠️</span><span id="hub-fading-text"></span>
+  </div>
+
+  <div class="game-grid">
+    <button class="game-card" id="card-blaster">
+      <span class="game-icon">🚀</span>
+      <span class="game-name">Palabra Blaster</span>
+      <span class="game-desc">Dispara traduciendo bajo presión. Jefes de conjugación.</span>
+      <span class="game-meta" id="hub-blaster-high"></span>
+    </button>
+    <button class="game-card" id="card-match">
+      <span class="game-icon">🎴</span>
+      <span class="game-name">Memoria</span>
+      <span class="game-desc">Empareja español con inglés. Tranquilo pero traicionero.</span>
+      <span class="game-meta" id="hub-match-best"></span>
+    </button>
+    <button class="game-card game-card-codex" id="card-codex">
+      <span class="game-icon">📖</span>
+      <span class="game-name">Códice</span>
+      <span class="game-desc">Tu colección de palabras — cada una con su fuerza actual.</span>
+      <span class="game-meta">colecciónalas todas</span>
+    </button>
+  </div>
+</div>
+
+<!-- ═══ CODEX ═══ -->
+<div id="screen-codex" class="screen hidden">
+  <header class="sub-header">
+    <button id="cx-back" class="back-btn">← Volver</button>
+    <h2>Códice de palabras</h2>
+    <span id="cx-count" class="muted"></span>
+  </header>
+  <p id="cx-summary" class="muted"></p>
+  <div class="cx-filters">
+    <select id="cx-cat"></select>
+    <select id="cx-status">
+      <option value="">todos los estados</option>
+      <option value="new">nuevas</option>
+      <option value="learning">aprendiendo</option>
+      <option value="strong">fuertes</option>
+      <option value="mastered">dominadas</option>
+      <option value="fading">olvidándose</option>
+    </select>
+  </div>
+  <div id="cx-grid"></div>
+</div>
+
+<!-- ═══ BLASTER ═══ -->
+<div id="screen-blaster" class="screen hidden">
+  <div id="bl-hud">
+    <div class="hud-left">
+      <button id="bl-quit" class="back-btn">← Salir</button>
+      <span id="bl-score">0</span>
+      <span id="bl-combo" class="hidden">x1</span>
+    </div>
+    <div class="hud-center"><span id="bl-wave">Wave 1</span></div>
+    <div class="hud-right">
+      <span id="bl-lives">❤️❤️❤️</span>
+      <button id="bl-mute" class="icon-btn" title="Sonido">🔊</button>
+    </div>
+  </div>
+
+  <div class="game-stage">
+    <canvas id="bl-canvas" width="900" height="640"></canvas>
+
+    <div id="bl-banner" class="banner hidden"><span id="bl-banner-text"></span></div>
+
+    <div id="bl-pause" class="overlay hidden">
+      <h2>PAUSED</h2>
+      <p class="muted">Press Esc to resume</p>
+    </div>
+
+    <div id="bl-victory" class="overlay hidden">
+      <h2>¡NO MANCHES!</h2>
+      <p class="tagline">You cleared all 10 waves.</p>
+      <p id="bl-victory-stats" class="muted"></p>
+      <button id="bl-endless" class="big-btn">KEEP GOING — ENDLESS MODE</button>
+      <button id="bl-finish" class="small-btn">Finish &amp; see stats</button>
+    </div>
+
+    <div id="bl-over" class="overlay hidden">
+      <h2 id="bl-over-title">GAME OVER</h2>
+      <p id="bl-over-stats" class="tagline"></p>
+      <div id="bl-over-review" class="review hidden">
+        <h3>Words that got you — study these:</h3>
+        <div id="bl-over-missed"></div>
+      </div>
+      <button id="bl-restart" class="big-btn">PLAY AGAIN</button>
+      <button id="bl-quit-over" class="small-btn">Back to arcade</button>
+    </div>
+  </div>
+
+  <div id="bl-input-bar">
+    <span class="input-icon">▶</span>
+    <input id="bl-answer" type="text" autocomplete="off" spellcheck="false"
+           placeholder="type the translation, press Enter to fire" />
+  </div>
+</div>
+
+<!-- ═══ MEMORIA ═══ -->
+<div id="screen-match" class="screen hidden">
+  <header class="sub-header">
+    <button id="mt-quit" class="back-btn">← Salir</button>
+    <h2>Memoria</h2>
+    <span class="muted">movimientos: <span id="mt-moves">0</span> · pares: <span id="mt-found">0 / 10</span></span>
+  </header>
+
+  <div class="game-stage">
+    <div id="mt-grid"></div>
+    <div id="mt-over" class="overlay hidden">
+      <h2>¡ÉSO!</h2>
+      <p id="mt-over-stats" class="tagline"></p>
+      <button id="mt-again" class="big-btn">OTRA VEZ</button>
+      <button id="mt-back" class="small-btn">Back to arcade</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
