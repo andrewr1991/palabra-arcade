@@ -137,10 +137,25 @@ $("cx-back").addEventListener("click", () => showScreen("hub"));
 $("cx-cat").addEventListener("change", renderCodexGrid);
 $("cx-status").addEventListener("change", renderCodexGrid);
 
-$("profile-select").addEventListener("change", (e) => {
+// In-page dialog — native prompt()/alert() hang embedded previews
+function askDialog(msg, { input = false } = {}) {
+  return new Promise((resolve) => {
+    const dlg = $("app-dialog");
+    $("dialog-msg").textContent = msg;
+    const inp = $("dialog-input");
+    inp.classList.toggle("hidden", !input);
+    inp.value = "";
+    dlg.returnValue = "cancel";
+    dlg.onclose = () => resolve(dlg.returnValue === "ok" ? (input ? inp.value.trim() : true) : null);
+    dlg.showModal();
+    if (input) inp.focus();
+  });
+}
+
+$("profile-select").addEventListener("change", async (e) => {
   if (e.target.value === "__new__") {
-    const name = prompt("Nombre del nuevo perfil:");
-    if (name && name.trim()) profile.createProfile(name.trim());
+    const name = await askDialog("Nombre del nuevo perfil:", { input: true });
+    if (name) profile.createProfile(name);
   } else {
     profile.loadProfile(e.target.value);
   }
@@ -156,7 +171,7 @@ $("import-file").addEventListener("change", async (e) => {
     profile.importSave(await file.text());
     renderHub();
   } catch (err) {
-    alert("No se pudo importar: " + err.message);
+    askDialog("No se pudo importar: " + err.message);
   }
   e.target.value = "";
 });

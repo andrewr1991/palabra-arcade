@@ -153,6 +153,17 @@
   </div>
 </div>
 
+<dialog id="app-dialog">
+  <form method="dialog">
+    <p id="dialog-msg"></p>
+    <input id="dialog-input" type="text" autocomplete="off" maxlength="24">
+    <div class="dialog-btns">
+      <button value="ok" class="big-btn dialog-ok">OK</button>
+      <button value="cancel" class="small-btn" formnovalidate>Cancelar</button>
+    </div>
+  </form>
+</dialog>
+
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

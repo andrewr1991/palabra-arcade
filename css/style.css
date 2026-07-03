@@ -387,3 +387,30 @@ button { font-family: inherit; }
 @media (max-width: 700px) {
   #mt-grid { grid-template-columns: repeat(4, 1fr); }
 }
+
+/* ── Dialog ──────────────────────────────────────────────────── */
+#app-dialog {
+  background: var(--panel);
+  color: var(--text);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 26px 30px;
+  min-width: 320px;
+}
+#app-dialog::backdrop { background: rgba(7, 10, 20, 0.75); }
+#dialog-msg { font-size: 17px; margin-bottom: 14px; }
+#dialog-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 17px;
+  padding: 9px 12px;
+  outline: none;
+  margin-bottom: 16px;
+}
+#dialog-input:focus { border-color: var(--neon-dim); }
+.dialog-btns { display: flex; gap: 12px; justify-content: center; }
+.dialog-btns .big-btn { margin-top: 0; padding: 9px 26px; font-size: 15px; }
