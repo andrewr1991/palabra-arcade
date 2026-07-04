@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Palabra Arcade</title>
+<meta name="theme-color" content="#0a0e1a">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -39,6 +42,10 @@
 
   <div id="hub-fading" class="fading-alert hidden">
     <span>⚠️</span><span id="hub-fading-text"></span>
+  </div>
+
+  <div id="hub-placement" class="fading-alert hidden" style="border-color:#1d4d38; color:var(--neon); cursor:pointer;">
+    <span>🎯</span><span>¿Nuevo por aquí pero no principiante? Haz la prueba de nivel — 12 preguntas y los juegos se ajustan a ti.</span>
   </div>
 
   <h3 class="hub-section">📚 Estudio</h3>
@@ -446,6 +453,27 @@
   </div>
 </div>
 
+<!-- ═══ PRUEBA DE NIVEL ═══ -->
+<div id="screen-placement" class="screen hidden">
+  <header class="sub-header">
+    <button id="pt-skip" class="back-btn">← Saltar</button>
+    <h2>Prueba de nivel</h2>
+    <span class="muted" id="pt-progress"></span>
+  </header>
+  <div class="game-stage">
+    <div id="pt-quiz" class="nv-card">
+      <p class="muted">¿Qué significa…</p>
+      <div class="nv-word-row"><span id="pt-word"></span></div>
+      <div id="pt-options"></div>
+    </div>
+    <div id="pt-result" class="nv-card hidden">
+      <h2 style="color:var(--neon); font-size:28px;">¡LISTO!</h2>
+      <p id="pt-result-stats" class="tagline" style="margin:14px 0;"></p>
+      <button id="pt-done" class="big-btn">AL ARCADE →</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ AJUSTES ═══ -->
 <div id="screen-ajustes" class="screen hidden">
   <header class="sub-header">
@@ -524,6 +552,20 @@
     <button id="tw-export" class="small-btn">💾 Exportar paquete</button>
     <button id="tw-import" class="small-btn">📂 Importar paquete</button>
     <input id="tw-import-file" type="file" accept=".json" class="hidden">
+  </div>
+
+  <div class="aj-group">
+    <h3 class="pf-h">🎙 Voz de la familia</h3>
+    <p class="muted aj-note">Graba a un hablante nativo (tu esposa cuenta 😉) diciendo cualquier palabra — la app usará su voz en vez del robot.</p>
+    <div class="aj-row">
+      <input id="rc-word" type="text" list="rc-words" placeholder="palabra a grabar" autocomplete="off" spellcheck="false">
+      <datalist id="rc-words"></datalist>
+      <button id="rc-record" class="small-btn">🎙 Grabar</button>
+      <button id="rc-play" class="small-btn">▶ Escuchar</button>
+      <button id="rc-delete" class="small-btn danger">🗑</button>
+      <span id="rc-status" class="muted"></span>
+    </div>
+    <p id="rc-count" class="muted aj-note"></p>
   </div>
   <div id="tw-list"></div>
 </div>

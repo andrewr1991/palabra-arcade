@@ -2,6 +2,9 @@
 // Stored once per browser (shared by all profiles).
 
 import { WORDS } from "./data/words.js";
+import { WORDS2 } from "./data/words2.js";
+
+const BUILT_IN = [...WORDS, ...WORDS2];
 
 const KEY = "pa_custom_words";
 let custom = load();
@@ -20,7 +23,7 @@ function valid(w) {
 
 export function customWords() { return custom; }
 
-export function allWords() { return custom.length ? [...WORDS, ...custom] : WORDS; }
+export function allWords() { return custom.length ? [...BUILT_IN, ...custom] : BUILT_IN; }
 
 export function findWord(es) { return allWords().find((w) => w.es === es) || null; }
 

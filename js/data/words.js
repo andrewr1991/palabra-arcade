@@ -300,10 +300,20 @@ export const BOSS_VERBS = [
     pretérito: ["pude", "pudiste", "pudo", "pudimos", "pudieron"] },
 ];
 
+// futuro simple: infinitive + é/ás/á/emos/án, with the four irregular stems
+const FUT_STEMS = { tener: "tendr", hacer: "har", querer: "querr", poder: "podr" };
+for (const v of BOSS_VERBS) {
+  const stem = FUT_STEMS[v.inf] || v.inf;
+  v.futuro = ["é", "ás", "á", "emos", "án"].map((e) => stem + e);
+}
+
+export const BOSS_TENSES = ["presente", "pretérito", "futuro"];
 export const BOSS_PERSONS = ["yo", "tú", "él/ella", "nosotros", "ellos"];
 
 export const CATEGORIES = {
   slang: "Slang mexicano", food: "Comida", family: "Familia", verb: "Verbos",
   adj: "Adjetivos", house: "La casa", time: "Tiempo", travel: "Viajes",
-  body: "El cuerpo", nature: "Naturaleza", custom: "Mis palabras",
+  body: "El cuerpo", nature: "Naturaleza", colors: "Colores",
+  weather: "El clima", emotions: "Emociones", work: "Trabajo y tec",
+  city: "La ciudad", conn: "Conectores", custom: "Mis palabras",
 };

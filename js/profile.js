@@ -10,8 +10,8 @@ let current = null; // { id, data, brain }
 
 function freshSave(name) {
   return {
-    name, version: 2,
-    xp: 0, streak: 0, bestStreak: 0, lastPlayed: null,
+    name, version: 3,
+    xp: 0, streak: 0, bestStreak: 0, lastPlayed: null, freezes: 1,
     muted: false, blasterHigh: 0, matchBest: null,
     blasterVictory: false, matchPerfect: false,
     loteriaWins: 0, palabrleWins: 0, ahorcadoWins: 0, clasificadorBest: 0,
@@ -90,16 +90,32 @@ export function addXP(n) {
   current.data.history[day] = (current.data.history[day] || 0) + gained;
   current.data.knownLog[day] = current.brain.stats().known;
   touchStreak();
+  const after = levelInfo().level;
+  const leveledUp = after > before;
+  if (leveledUp) {
+    // level-ups grant a streak freeze (max 3)
+    current.data.freezes = Math.min(3, (current.data.freezes || 0) + 1);
+    window.dispatchEvent(new CustomEvent("pa-levelup", { detail: { level: after } }));
+  }
   saveNow();
-  return { gained, leveledUp: levelInfo().level > before };
+  return { gained, leveledUp };
 }
 
 export function touchStreak() {
   const today = new Date().toDateString();
   const last = current.data.lastPlayed;
   if (last === today) return;
-  const yesterday = new Date(Date.now() - 86400000).toDateString();
-  current.data.streak = last === yesterday ? current.data.streak + 1 : 1;
+  const gapDays = last ? Math.round((new Date(today) - new Date(last)) / 86400000) : Infinity;
+  if (gapDays === 1) {
+    current.data.streak++;
+  } else if (gapDays === 2 && (current.data.freezes || 0) > 0) {
+    // a streak freeze covers exactly one missed day
+    current.data.freezes--;
+    current.data.streak++;
+    window.dispatchEvent(new CustomEvent("pa-freeze-used"));
+  } else {
+    current.data.streak = 1;
+  }
   current.data.lastPlayed = today;
   if (current.data.streak > (current.data.bestStreak || 0)) {
     current.data.bestStreak = current.data.streak;

@@ -11,7 +11,7 @@ const WEIGHT = 0.4;
 let deps, bound = false;
 const $ = (id) => document.getElementById(id);
 
-let first = null, lock = false, moves = 0, matched = 0, startTime = 0;
+let first = null, lock = false, moves = 0, matched = 0, startTime = 0, pairsRound = PAIRS;
 let mismatches = {};   // es → count of wrong pairings this round
 
 export function initMatch(dependencies) {
@@ -47,6 +47,8 @@ function startRound() {
     words.push(w);
     if (words.length === PAIRS) break;
   }
+  pairsRound = words.length;
+  $("mt-found").textContent = `0 / ${pairsRound}`;
   const cards = [];
   words.forEach((w, i) => {
     cards.push({ pair: i, es: w.es, side: "es", label: w.es });
@@ -83,10 +85,10 @@ function flip(el) {
     a.classList.add("matched");
     b.classList.add("matched");
     matched++;
-    $("mt-found").textContent = `${matched} / ${PAIRS}`;
+    $("mt-found").textContent = `${matched} / ${pairsRound}`;
     active().brain.report(a.dataset.es, { correct: true, weight: WEIGHT });
     saveNow();
-    if (matched === PAIRS) finish();
+    if (matched === pairsRound) finish();
   } else {
     // pairing a Spanish card with the wrong meaning is weak "wrong" evidence
     for (const c of [a, b]) {

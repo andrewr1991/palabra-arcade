@@ -4,6 +4,7 @@
 // better. We rank what's available and let Settings override the pick.
 
 import { getSettings } from "./settings.js";
+import { getClip } from "./recorder.js";
 
 let ranked = [];
 
@@ -49,10 +50,19 @@ export function currentVoice() {
   return ranked[0] || null;
 }
 
-export function speak(text, rateOverride) {
-  if (!window.speechSynthesis) return;
+export async function speak(text, rateOverride) {
   const cfg = getSettings();
   if (cfg.ttsVol <= 0) return;
+  // a family recording beats any robot
+  const clip = await getClip(text);
+  if (clip) {
+    const a = new Audio(URL.createObjectURL(clip));
+    a.volume = cfg.ttsVol;
+    a.onended = () => URL.revokeObjectURL(a.src);
+    a.play().catch(() => {});
+    return;
+  }
+  if (!window.speechSynthesis) return;
   const u = new SpeechSynthesisUtterance(text);
   const voice = currentVoice();
   if (voice) { u.voice = voice; u.lang = voice.lang; }

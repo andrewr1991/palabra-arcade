@@ -1,7 +1,7 @@
 // Palabra Blaster — game #1. Words come from the shared brain;
 // every hit/miss reports back as typed-recall evidence (weight 1).
 
-import { BOSS_VERBS, BOSS_PERSONS } from "../data/words.js";
+import { BOSS_VERBS, BOSS_PERSONS, BOSS_TENSES } from "../data/words.js";
 import { norm, answerSetFor, inputMatches } from "../brain.js";
 import { active, addXP, saveNow } from "../profile.js";
 import { getSettings } from "../settings.js";
@@ -139,7 +139,7 @@ function startBoss(n) {
 function nextBossPrompt() {
   const b = game.boss;
   b.verb = BOSS_VERBS[Math.floor(Math.random() * BOSS_VERBS.length)];
-  b.tense = Math.random() < 0.5 ? "presente" : "pretérito";
+  b.tense = BOSS_TENSES[Math.floor(Math.random() * BOSS_TENSES.length)];
   b.personIdx = Math.floor(Math.random() * BOSS_PERSONS.length);
   b.timeLeft = b.promptTime;
 }

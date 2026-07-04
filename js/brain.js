@@ -50,6 +50,11 @@ export class Brain {
     r.last = Date.now();
   }
 
+  // placement test: mark a word as already-known with solid stability
+  seedKnown(es) {
+    this.state.words[es] = { st: 8, last: Date.now(), seen: 1, ok: 1, bad: 0 };
+  }
+
   // A game session asks: "give me n words". Serves weakest known words
   // first (that's the review) plus a drip of brand-new ones.
   requestWords(n, { newCount = Math.ceil(n * 0.2), pool = allWords() } = {}) {

@@ -16,10 +16,13 @@ import { initPalabrle, enterPalabrle } from "./games/palabrle.js";
 import { initClasificador, enterClasificador } from "./games/clasificador.js";
 import { initAhorcado, enterAhorcado } from "./games/ahorcado.js";
 import { initStudy, enterNuevas, enterRepaso } from "./study.js";
+import { initPlacement, enterPlacement } from "./placement.js";
+import * as rec from "./recorder.js";
+import { toast } from "./ui.js";
 
 const $ = (id) => document.getElementById(id);
 const SCREENS = ["hub", "codex", "blaster", "match", "perfil",
-  "loteria", "palabrle", "clasificador", "ahorcado", "nuevas", "repaso", "taller", "ajustes"];
+  "loteria", "palabrle", "clasificador", "ahorcado", "nuevas", "repaso", "taller", "ajustes", "placement"];
 
 function showScreen(name) {
   for (const s of SCREENS) $("screen-" + s).classList.toggle("hidden", s !== name);
@@ -43,7 +46,9 @@ function renderHub() {
   $("hub-level").textContent = `Nivel ${level}`;
   $("hub-xpbar").style.width = Math.round((into / need) * 100) + "%";
   $("hub-xptext").textContent = `${into} / ${need} XP`;
-  $("hub-streak").textContent = p.data.streak > 0 ? `🔥 ${p.data.streak}` : "🔥 0";
+  $("hub-streak").textContent =
+    `🔥 ${p.data.streak || 0}` + ((p.data.freezes || 0) > 0 ? ` · 🧊 ${p.data.freezes}` : "");
+  $("hub-placement").classList.toggle("hidden", p.brain.stats().known > 0);
 
   const s = p.brain.stats();
   $("hub-stats").innerHTML = "";
@@ -301,6 +306,9 @@ function renderTaller() {
     for (const [key, label] of Object.entries(CATEGORIES)) catSel.appendChild(new Option(label, key));
     catSel.value = "custom";
   }
+  const dl = $("rc-words");
+  if (!dl.children.length) for (const w of allWords()) dl.appendChild(new Option(w.es));
+  refreshRecCount();
   const list = $("tw-list");
   list.innerHTML = "";
   const words = custom.customWords();
@@ -347,6 +355,53 @@ initPalabrle(deps);
 initClasificador(deps);
 initAhorcado(deps);
 initStudy(deps);
+initPlacement(deps);
+$("hub-placement").addEventListener("click", () => { showScreen("placement"); enterPlacement(); });
+
+window.addEventListener("pa-levelup", (e) => toast(`¡Subiste al nivel ${e.detail.level}! +1 🧊`, "🚀"));
+window.addEventListener("pa-freeze-used", () => toast("Un hielo salvó tu racha", "🧊"));
+
+// ── Voz de la familia (recorder) ─────────────────────────────────
+async function refreshRecCount() {
+  const keys = await rec.listClips();
+  $("rc-count").textContent = keys.length
+    ? `${keys.length} grabación${keys.length === 1 ? "" : "es"}: ${keys.slice(0, 12).join(", ")}${keys.length > 12 ? "…" : ""}`
+    : "aún no hay grabaciones";
+}
+$("rc-record").addEventListener("click", async () => {
+  const word = $("rc-word").value.trim();
+  if (!word) { askDialog("Escribe la palabra que vas a grabar."); return; }
+  if (rec.isRecording()) {
+    const blob = await rec.stopRecording();
+    await rec.saveClip(word, blob);
+    $("rc-record").textContent = "🎙 Grabar";
+    $("rc-status").textContent = `"${word}" guardada ✓`;
+    refreshRecCount();
+  } else {
+    try {
+      await rec.startRecording();
+      $("rc-record").textContent = "⏹ Detener";
+      $("rc-status").textContent = "grabando…";
+    } catch {
+      askDialog("No se pudo acceder al micrófono.");
+    }
+  }
+});
+$("rc-play").addEventListener("click", () => {
+  const word = $("rc-word").value.trim();
+  if (word) speak(word);
+});
+$("rc-delete").addEventListener("click", async () => {
+  const word = $("rc-word").value.trim();
+  if (!word) return;
+  await rec.deleteClip(word);
+  $("rc-status").textContent = `"${word}" eliminada`;
+  refreshRecCount();
+});
+
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
 
 $("card-loteria").addEventListener("click", () => { showScreen("loteria"); enterLoteria(); });
 $("card-palabrle").addEventListener("click", () => { showScreen("palabrle"); enterPalabrle(); });
