@@ -3,7 +3,7 @@
 
 import { allWords } from "./customwords.js";
 import { active, saveNow } from "./profile.js";
-import { toast } from "./ui.js";
+import { toast, fxPop } from "./ui.js";
 
 export const ACHIEVEMENTS = [
   { id: "primera", icon: "🌵", name: "Primeros pasos",
@@ -72,6 +72,7 @@ export function checkAchievements(levelInfoFn) {
   }
   if (fresh.length) {
     saveNow();
+    fxPop("fx-starburst");
     for (const a of fresh) toast(`Logro: ${a.name}`, a.icon);
   }
   return fresh;

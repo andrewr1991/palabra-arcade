@@ -22,6 +22,31 @@ export function accentBar(input) {
   return bar;
 }
 
+// full-screen FX pop (confetti, star burst, level-up glow)
+export function fxPop(name) {
+  const img = document.createElement("img");
+  img.className = "fx-pop";
+  img.src = `assets/ui/${name}.png`;
+  img.alt = "";
+  document.body.appendChild(img);
+  setTimeout(() => img.remove(), 1300);
+}
+
+// short arcade "boop" for cabinet hovers
+let bctx = null;
+export function boop(vol = 0.05) {
+  try {
+    if (!bctx) bctx = new (window.AudioContext || window.webkitAudioContext)();
+    const t = bctx.currentTime;
+    const o = bctx.createOscillator(), g = bctx.createGain();
+    o.type = "square"; o.frequency.value = 620;
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+    o.connect(g); g.connect(bctx.destination);
+    o.start(t); o.stop(t + 0.09);
+  } catch {}
+}
+
 export function toast(msg, icon = "🏆") {
   const el = document.createElement("div");
   el.className = "toast";

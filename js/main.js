@@ -18,7 +18,7 @@ import { initAhorcado, enterAhorcado } from "./games/ahorcado.js";
 import { initStudy, enterNuevas, enterRepaso } from "./study.js";
 import { initPlacement, enterPlacement } from "./placement.js";
 import * as rec from "./recorder.js";
-import { toast } from "./ui.js";
+import { toast, fxPop, boop } from "./ui.js";
 import { initPepe, hubTip } from "./pepe.js";
 import { initSprites } from "./sprites.js";
 
@@ -361,8 +361,20 @@ initStudy(deps);
 initPlacement(deps);
 $("hub-placement").addEventListener("click", () => { showScreen("placement"); enterPlacement(); });
 
-window.addEventListener("pa-levelup", (e) => toast(`¡Subiste al nivel ${e.detail.level}! +1 🧊`, "🚀"));
+window.addEventListener("pa-levelup", (e) => {
+  toast(`¡Subiste al nivel ${e.detail.level}! +1 🧊`, "🚀");
+  fxPop("fx-levelup");
+  setTimeout(() => fxPop("fx-confetti"), 250);
+});
 window.addEventListener("pa-freeze-used", () => toast("Un hielo salvó tu racha", "🧊"));
+
+// arcade boop on cabinet hover (respects sfx volume)
+for (const cab of document.querySelectorAll(".game-card.cab")) {
+  cab.addEventListener("mouseenter", () => {
+    const v = getSettings().sfxVol;
+    if (v > 0) boop(0.05 * v);
+  });
+}
 
 // ── Voz de la familia (recorder) ─────────────────────────────────
 async function refreshRecCount() {

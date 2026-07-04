@@ -43,7 +43,7 @@ export function initPepe(container) {
   const img = document.createElement("img");
   img.className = "pepe-img";
   img.alt = "Pepe";
-  img.src = "assets/ui/pepe-1.png";
+  img.src = "assets/ui/pepe-neutral.png";
   img.onerror = () => {
     // sliced art missing — fall back to the hand-coded pixel sprite
     const canvas = document.createElement("canvas");
@@ -74,7 +74,7 @@ export function initPepe(container) {
 export function say(text, bounce = false) {
   if (!bubble) return;
   if (sprite && sprite.tagName === "IMG") {
-    sprite.src = bounce ? "assets/ui/pepe-3.png" : "assets/ui/pepe-1.png";
+    sprite.src = bounce ? "assets/ui/pepe-excited.png" : "assets/ui/pepe-neutral.png";
   }
   bubble.textContent = text;
   bubble.classList.remove("hidden");

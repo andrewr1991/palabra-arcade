@@ -20,7 +20,10 @@
 
 html, body {
   min-height: 100%;
-  background: radial-gradient(ellipse at 50% 0%, #101830 0%, var(--bg) 65%);
+  background:
+    linear-gradient(rgba(10, 10, 20, 0.86), rgba(10, 10, 22, 0.94)),
+    url("../assets/ui/bg-lobby.png") center / cover fixed no-repeat,
+    radial-gradient(ellipse at 50% 0%, #101830 0%, var(--bg) 65%);
   color: var(--text);
   font-family: "Segoe UI", system-ui, sans-serif;
 }
@@ -1092,6 +1095,32 @@ button { font-family: inherit; }
 .nav-btn img { display: block; height: 46px; image-rendering: pixelated; border-radius: 8px; }
 .nav-btn:hover img { transform: translateY(-2px); filter: brightness(1.15); }
 #pepe .pepe-img { width: 112px; image-rendering: pixelated; }
+
+/* cabinet idle bob + fx pops */
+.game-grid.grid-3 .game-card.cab { animation: cabBob 3.2s ease-in-out infinite alternate; }
+.game-grid.grid-3 .game-card.cab:nth-child(2n) { animation-delay: 0.8s; }
+.game-grid.grid-3 .game-card.cab:nth-child(3n) { animation-delay: 1.6s; }
+@keyframes cabBob {
+  from { transform: translateY(0); }
+  to { transform: translateY(-3px); }
+}
+.game-card.cab:hover { animation-play-state: paused; }
+.fx-pop {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 220px;
+  transform: translate(-50%, -50%) scale(0.4);
+  image-rendering: pixelated;
+  pointer-events: none;
+  z-index: 1000;
+  animation: fxPop 1.25s ease-out forwards;
+  mix-blend-mode: screen;
+}
+@keyframes fxPop {
+  20% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+  100% { transform: translate(-50%, -60%) scale(1.4); opacity: 0; }
+}
 
 /* CRT scanlines (toggle in Ajustes) */
 body.crt::before {
