@@ -1,18 +1,21 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --bg: #0a0e1a;
-  --panel: #121828;
-  --panel-2: #1a2238;
-  --border: #1e2a45;
-  --neon: #35e08f;
-  --neon-dim: #1d8f5c;
-  --cyan: #4fd6ff;
-  --red: #ff5d5d;
-  --gold: #ffd166;
-  --purple: #b18cff;
-  --text: #e8eefc;
-  --muted: #7c89a8;
+  /* SNES-era warm palette (art direction v2) */
+  --bg: #0d0d16;
+  --panel: #1a1726;
+  --panel-2: #241f33;
+  --border: #3a2f4a;
+  --neon: #6abe30;
+  --neon-dim: #3f9b43;
+  --cyan: #4fa4e8;
+  --red: #e04f4f;
+  --gold: #f7b32b;
+  --orange: #e8722a;
+  --purple: #9b6de0;
+  --text: #f2ead8;
+  --muted: #9a91b0;
+  --pixel-font: "Press Start 2P", "Segoe UI", monospace;
 }
 
 html, body {
@@ -958,3 +961,106 @@ button { font-family: inherit; }
 .ach-desc { font-size: 12px; color: var(--muted); }
 .ach.locked { border-color: var(--border); opacity: 0.45; filter: grayscale(1); }
 .ach.locked .ach-name { color: var(--text); }
+
+/* ── Arcade theme v2: pixel typography, cabinets, Pepe, CRT ───── */
+.hub-title, .overlay h2, .banner, .big-btn, .level-badge {
+  font-family: var(--pixel-font);
+}
+.hub-title { font-size: 30px; letter-spacing: 2px; color: var(--gold); text-shadow: 3px 3px 0 #7a3b12, 0 0 24px rgba(247, 179, 43, 0.35); }
+.hub-title .accent { color: var(--neon); text-shadow: 3px 3px 0 #1d4d1f; }
+.overlay h2 { font-size: 22px; }
+.banner { font-size: 26px; }
+.big-btn { font-size: 13px; border-radius: 6px; box-shadow: 0 4px 0 #1d4d1f, 0 0 24px rgba(106, 190, 48, 0.35); }
+.big-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #1d4d1f; }
+.hub-section { font-family: var(--pixel-font); font-size: 11px; color: var(--gold); }
+
+/* cabinets */
+.game-grid { align-items: stretch; }
+.game-card {
+  padding: 0 0 14px;
+  overflow: hidden;
+  border-radius: 8px 8px 4px 4px;
+  border-color: #4a3a2a;
+  background: linear-gradient(#2c2135, #1a1726 60%);
+}
+.game-card .game-name {
+  order: -2;
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-family: var(--pixel-font);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #2a1c10;
+  background: linear-gradient(#f7b32b, #e8722a);
+  padding: 9px 4px;
+  border-bottom: 3px solid #7a3b12;
+}
+.game-card .game-icon {
+  order: -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(100% - 28px);
+  margin: 10px auto 4px;
+  padding: 14px 0;
+  font-size: 30px;
+  background: #0a0c12;
+  border: 3px solid #4a3a2a;
+  border-radius: 4px;
+  position: relative;
+}
+.game-card .game-icon::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(transparent 0 2px, rgba(0, 0, 0, 0.25) 2px 4px);
+  pointer-events: none;
+}
+.game-card .game-desc, .game-card .game-meta { padding: 0 14px; }
+.game-card:hover { border-color: var(--gold); transform: translateY(-4px); }
+
+/* Pepe */
+#pepe { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 4px 0 10px; }
+.pepe-canvas {
+  width: 105px;
+  height: 90px;
+  image-rendering: pixelated;
+}
+.pepe-bounce { animation: pepeBounce 0.6s; }
+@keyframes pepeBounce {
+  0%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-14px) rotate(-4deg); }
+  60% { transform: translateY(0); }
+  80% { transform: translateY(-6px); }
+}
+.pepe-bubble {
+  max-width: 380px;
+  background: var(--text);
+  color: #241a10;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 3px solid #241a10;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4);
+  position: relative;
+}
+.pepe-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  border: 6px solid transparent;
+  border-top-color: #241a10;
+}
+
+/* CRT scanlines (toggle in Ajustes) */
+body.crt::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  pointer-events: none;
+  background: repeating-linear-gradient(transparent 0 2px, rgba(0, 0, 0, 0.14) 2px 4px);
+}

@@ -8,6 +8,7 @@ const DEFAULTS = {
   ttsRate: 0.95,    // 0.5..1.2 voice speed
   voiceURI: "",     // preferred speechSynthesis voice ("" = auto best)
   lang: "es",       // UI language: es | en
+  crt: true,        // retro scanline overlay
   reminderOn: false,
   reminderTime: "19:00",
 };

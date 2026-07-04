@@ -7,6 +7,9 @@
 <meta name="theme-color" content="#0a0e1a">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -37,6 +40,7 @@
 
   <h1 class="hub-title">PALABRA<span class="accent">ARCADE</span></h1>
   <p class="hub-tagline">Un cerebro, muchos juegos. Todo lo que aprendas te sigue.</p>
+  <div id="pepe-home"></div>
 
   <div id="hub-stats"></div>
 
@@ -504,6 +508,14 @@
       <button id="aj-voice-test" class="small-btn">🔊 Probar</button>
     </div>
     <p id="aj-voice-note" class="muted aj-note"></p>
+  </div>
+
+  <div class="aj-group">
+    <h3 class="pf-h">📺 Pantalla</h3>
+    <div class="aj-row">
+      <label id="lbl-crt" for="aj-crt">Efecto CRT (líneas retro)</label>
+      <input id="aj-crt" type="checkbox">
+    </div>
   </div>
 
   <div class="aj-group">

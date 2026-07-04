@@ -5,6 +5,7 @@ import { BOSS_VERBS, BOSS_PERSONS, BOSS_TENSES } from "../data/words.js";
 import { norm, answerSetFor, inputMatches } from "../brain.js";
 import { active, addXP, saveNow } from "../profile.js";
 import { getSettings } from "../settings.js";
+import { hasSprite, drawSprite } from "../sprites.js";
 
 const W = 900, H = 640;
 let canvas, ctx, deps, bound = false;
@@ -486,6 +487,7 @@ function render() {
 
 function drawShip() {
   const { x, y } = ship;
+  if (hasSprite("ship")) { drawSprite(ctx, "ship", x, y - 6, 2); return; }
   ctx.shadowColor = "rgba(53,224,143,0.7)";
   ctx.shadowBlur = 18;
   ctx.fillStyle = "#35e08f";

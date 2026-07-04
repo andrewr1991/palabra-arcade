@@ -19,6 +19,8 @@ import { initStudy, enterNuevas, enterRepaso } from "./study.js";
 import { initPlacement, enterPlacement } from "./placement.js";
 import * as rec from "./recorder.js";
 import { toast } from "./ui.js";
+import { initPepe, hubTip } from "./pepe.js";
+import { initSprites } from "./sprites.js";
 
 const $ = (id) => document.getElementById(id);
 const SCREENS = ["hub", "codex", "blaster", "match", "perfil",
@@ -92,6 +94,7 @@ function renderHub() {
 
   renderProfileSelect();
   checkAchievements(profile.levelInfo);
+  hubTip(s, fading.length, p.data.streak || 0);
 }
 
 function renderProfileSelect() {
@@ -399,6 +402,15 @@ $("rc-delete").addEventListener("click", async () => {
   refreshRecCount();
 });
 
+$("aj-crt").addEventListener("change", (e) => {
+  setSetting("crt", e.target.checked);
+  document.body.classList.toggle("crt", e.target.checked);
+});
+document.body.classList.toggle("crt", getSettings().crt);
+
+initPepe($("pepe-home"));
+initSprites();
+
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   navigator.serviceWorker.register("sw.js").catch(() => {});
 }
@@ -433,6 +445,7 @@ $("bl-input-bar").insertAdjacentElement("afterend", accentBar($("bl-answer")));
 // ── Ajustes (settings) ───────────────────────────────────────────
 function renderAjustes() {
   const cfg = getSettings();
+  $("aj-crt").checked = !!cfg.crt;
   $("aj-sfx").value = Math.round(cfg.sfxVol * 100);
   $("aj-ttsvol").value = Math.round(cfg.ttsVol * 100);
   $("aj-ttsrate").value = Math.round(cfg.ttsRate * 100);
