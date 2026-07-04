@@ -4,6 +4,7 @@
 import { BOSS_VERBS, BOSS_PERSONS } from "../data/words.js";
 import { norm, answerSetFor, inputMatches } from "../brain.js";
 import { active, addXP, saveNow } from "../profile.js";
+import { getSettings } from "../settings.js";
 
 const W = 900, H = 640;
 let canvas, ctx, deps, bound = false;
@@ -15,6 +16,8 @@ let ui = null;
 let actx = null;
 function tone(freq, dur, type = "square", vol = 0.08, delay = 0) {
   if (active().data.muted) return;
+  vol *= getSettings().sfxVol;
+  if (vol <= 0) return;
   if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
   const t = actx.currentTime + delay;
   const o = actx.createOscillator(), g = actx.createGain();
@@ -270,6 +273,7 @@ function endGame(won) {
   const data = active().data;
   if (game.score > data.blasterHigh) data.blasterHigh = game.score;
   const xp = Math.round(game.score / 10);
+  game.xpAwarded = true;
   const { leveledUp } = addXP(xp);
   const s = game.session;
   const answered = s.correct + s.wrong + s.landed;
@@ -298,6 +302,7 @@ function endGame(won) {
 function newGame() {
   game.score = 0; game.lives = 3; game.combo = 0; game.bestCombo = 0;
   game.endless = false;
+  game.xpAwarded = false;
   game.session = { correct: 0, wrong: 0, landed: 0, missed: new Map() };
   game.sessionWrong = new Set();
   particles.length = 0; popups.length = 0; lasers.length = 0;
@@ -599,6 +604,11 @@ export function enterBlaster() {
 }
 
 function quit() {
+  // quitting mid-run still banks the XP you earned
+  if (!game.xpAwarded && game.score > 0) {
+    game.xpAwarded = true;
+    addXP(Math.round(game.score / 10));
+  }
   game.running = false;
   game.state = "idle";
   ui.over.classList.add("hidden");

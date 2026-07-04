@@ -155,7 +155,7 @@ function finish() {
   const data = active().data;
   if (score > (data.clasificadorBest || 0)) data.clasificadorBest = score;
   const xp = Math.round(score / 2);
-  const { leveledUp } = xp > 0 ? addXP(xp) : { leveledUp: false };
+  const { leveledUp } = addXP(xp); // always — streak counts even at 0 points
   saveNow();
   $("cl-over-stats").textContent =
     `${correct} correctas · ${score} puntos (mejor: ${data.clasificadorBest}) · +${xp} XP${leveledUp ? " · ¡LEVEL UP!" : ""}`;

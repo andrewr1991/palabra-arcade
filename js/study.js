@@ -1,12 +1,15 @@
 // Estudio — the learning pillar.
-// Palabras nuevas: guided intro of new words (word → sentence → quiz),
-// seeding them into the brain. Repaso: SRS flashcard review of what's due.
+// Palabras nuevas: interactive intro — meet the word, then type it yourself,
+// then a mini-quiz seeds all five into the brain.
+// Repaso: SRS flashcard review of what's due.
 
 import { allWords } from "./customwords.js";
 import { CATEGORIES } from "./data/words.js";
 import { active, addXP, saveNow } from "./profile.js";
-import { shuffle, answerSetFor, inputMatches } from "./brain.js";
+import { shuffle, norm, answerSetFor, inputMatches } from "./brain.js";
 import { speak } from "./audio.js";
+import { accentBar } from "./ui.js";
+import { t } from "./i18n.js";
 
 const $ = (id) => document.getElementById(id);
 let deps, bound = false;
@@ -18,10 +21,15 @@ export function initStudy(dependencies) {
 
   // Palabras nuevas
   $("nv-quit").addEventListener("click", quitNuevas);
-  $("nv-next").addEventListener("click", nextIntro);
+  $("nv-next").addEventListener("click", () => startTypeStep());
   $("nv-speak").addEventListener("click", () => nv.word && speak(nv.word.es));
+  $("nv-type-speak").addEventListener("click", () => nv.word && speak(nv.word.es));
+  $("nv-type-input").addEventListener("keydown", (e) => { if (e.key === "Enter") checkTyped(); });
+  $("nv-type-check").addEventListener("click", checkTyped);
+  $("nv-type-continue").addEventListener("click", nextIntro);
   $("nv-again").addEventListener("click", () => { $("nv-over").classList.add("hidden"); showCatPicker(); });
-  $("nv-back").addEventListener("click", quitNuevas);
+  $("nv-back").addEventListener("click", () => { $("nv-over").classList.add("hidden"); deps.onExit(); });
+  $("nv-type-zone").appendChild(accentBar($("nv-type-input")));
 
   // Repaso
   $("rp-quit").addEventListener("click", quitRepaso);
@@ -31,27 +39,33 @@ export function initStudy(dependencies) {
   $("rp-continue").addEventListener("click", nextRepaso);
   $("rp-again").addEventListener("click", () => { $("rp-over").classList.add("hidden"); enterRepaso(); });
   $("rp-back").addEventListener("click", quitRepaso);
+  $("rp-answer-zone").appendChild(accentBar($("rp-input")));
 }
 
 // ═══ Palabras nuevas ═════════════════════════════════════════════
 const INTRO_COUNT = 5;
 const SEED_WEIGHT = 0.3;
-let nv = { phase: "pick", words: [], idx: 0, word: null, quiz: [], quizIdx: 0, quizOk: 0 };
+let nv = { phase: "pick", words: [], idx: 0, word: null, quiz: [], quizIdx: 0, quizOk: 0, typedOk: 0 };
 
 export function enterNuevas() { showCatPicker(); }
 
+// Salir inside a session returns to the category picker, not the hub
 function quitNuevas() {
-  $("nv-over").classList.add("hidden");
+  if (nv.phase !== "pick") { showCatPicker(); return; }
   deps.onExit();
 }
 
+function hideAll() {
+  for (const id of ["nv-picker", "nv-card", "nv-type", "nv-quiz", "nv-over"]) $(id).classList.add("hidden");
+}
+
 function showCatPicker() {
-  nv = { phase: "pick", words: [], idx: 0, word: null, quiz: [], quizIdx: 0, quizOk: 0 };
+  nv = { phase: "pick", words: [], idx: 0, word: null, quiz: [], quizIdx: 0, quizOk: 0, typedOk: 0 };
+  hideAll();
+  $("nv-picker").classList.remove("hidden");
+  $("nv-progress").textContent = "";
   const brain = active().brain;
   const picker = $("nv-picker");
-  $("nv-picker").classList.remove("hidden");
-  $("nv-card").classList.add("hidden");
-  $("nv-quiz").classList.add("hidden");
   picker.innerHTML = "";
   const cats = Object.entries(CATEGORIES).filter(([key]) =>
     allWords().some((w) => w.cat === key && !brain.info(w.es)));
@@ -83,12 +97,12 @@ function startIntro(cat) {
   if (!nv.words.length) { showCatPicker(); return; }
   nv.idx = 0;
   nv.phase = "intro";
-  $("nv-picker").classList.add("hidden");
-  $("nv-card").classList.remove("hidden");
   showIntro();
 }
 
 function showIntro() {
+  hideAll();
+  $("nv-card").classList.remove("hidden");
   const w = nv.words[nv.idx];
   nv.word = w;
   $("nv-progress").textContent = `${nv.idx + 1} / ${nv.words.length}`;
@@ -96,8 +110,41 @@ function showIntro() {
   $("nv-en").textContent = w.en.join(", ");
   $("nv-ej-es").textContent = w.ej ? w.ej[0] : "";
   $("nv-ej-en").textContent = w.ej ? w.ej[1] : "";
-  $("nv-next").textContent = nv.idx === nv.words.length - 1 ? "AL QUIZ →" : "SIGUIENTE →";
   speak(w.es);
+}
+
+// step 2: produce it — type the word you just met
+function startTypeStep() {
+  hideAll();
+  $("nv-type").classList.remove("hidden");
+  const w = nv.word;
+  $("nv-type-prompt").textContent = `${t("typeWord")} "${w.en[0]}"?`;
+  $("nv-type-ej").textContent = w.ej ? w.ej[0].replace(new RegExp(escapeReg(w.es), "i"), "_____") : "";
+  $("nv-type-input").value = "";
+  $("nv-type-feedback").textContent = "";
+  $("nv-type-feedback").className = "nv-type-feedback";
+  $("nv-type-input").disabled = false;
+  $("nv-type-check").classList.remove("hidden");
+  $("nv-type-continue").classList.add("hidden");
+  $("nv-type-input").focus();
+  speak(w.es);
+}
+
+function escapeReg(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+
+function checkTyped() {
+  const typed = $("nv-type-input").value;
+  if (!typed.trim()) return;
+  const ok = norm(typed) === norm(nv.word.es);
+  if (ok) nv.typedOk++;
+  const fb = $("nv-type-feedback");
+  fb.textContent = ok ? `✓ ${t("typed")}` : `✗ ${t("typedWrong")} ${nv.word.es}`;
+  fb.className = "nv-type-feedback " + (ok ? "nv-fb-good" : "nv-fb-bad");
+  $("nv-type-input").disabled = true;
+  $("nv-type-check").classList.add("hidden");
+  $("nv-type-continue").classList.remove("hidden");
+  $("nv-type-continue").focus();
+  if (!ok) speak(nv.word.es);
 }
 
 function nextIntro() {
@@ -111,7 +158,7 @@ function startQuiz() {
   nv.quiz = shuffle([...nv.words]);
   nv.quizIdx = 0;
   nv.quizOk = 0;
-  $("nv-card").classList.add("hidden");
+  hideAll();
   $("nv-quiz").classList.remove("hidden");
   showQuiz();
 }
@@ -122,7 +169,10 @@ function showQuiz() {
   $("nv-quiz-progress").textContent = `${nv.quizIdx + 1} / ${nv.quiz.length}`;
   $("nv-quiz-word").textContent = w.es;
   speak(w.es);
-  const wrongOpts = shuffle(allWords().filter((x) => x.es !== w.es)).slice(0, 3);
+  // exclude words whose display translation collides (saber/conocer both "to know")
+  const wrongOpts = shuffle(allWords().filter(
+    (x) => x.es !== w.es && norm(x.en[0]) !== norm(w.en[0])
+  )).slice(0, 3);
   const options = shuffle([w, ...wrongOpts]);
   const box = $("nv-options");
   box.innerHTML = "";
@@ -157,11 +207,12 @@ function answerQuiz(correct, btn) {
 }
 
 function finishNuevas() {
-  const xp = 30 + nv.quizOk * 4;
+  const xp = 30 + nv.quizOk * 4 + nv.typedOk * 3;
   const { leveledUp } = addXP(xp);
-  $("nv-quiz").classList.add("hidden");
+  hideAll();
+  nv.phase = "pick";
   $("nv-over-stats").textContent =
-    `${nv.words.length} palabras nuevas · quiz ${nv.quizOk}/${nv.quiz.length} · +${xp} XP${leveledUp ? " · ¡LEVEL UP!" : ""}`;
+    `${nv.words.length} palabras nuevas · escritas ${nv.typedOk}/${nv.words.length} · quiz ${nv.quizOk}/${nv.quiz.length} · +${xp} XP${leveledUp ? " · ¡LEVEL UP!" : ""}`;
   $("nv-over").classList.remove("hidden");
   deps.onSessionEnd();
 }
@@ -238,7 +289,7 @@ function resolveRepaso(correct) {
 
 function finishRepaso() {
   const xp = rp.firstTryOk * 5;
-  const { leveledUp } = xp > 0 ? addXP(xp) : { leveledUp: false };
+  const { leveledUp } = addXP(xp); // always: streak counts even on a rough day
   $("rp-play").classList.add("hidden");
   $("rp-over-stats").textContent =
     `${rp.firstTryOk} / ${rp.total} a la primera · +${xp} XP${leveledUp ? " · ¡LEVEL UP!" : ""}`;

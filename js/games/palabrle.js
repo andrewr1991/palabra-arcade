@@ -85,10 +85,12 @@ function quit() {
 }
 
 function startRound(isDaily) {
+  const dayNum = Math.floor(Date.now() / 86400000);
+  // one daily per day — after that, the button hands you free play
+  if (isDaily && active().data.palabrleDaily === dayNum) isDaily = false;
   daily = isDaily;
   const pool = eligible();
   if (isDaily) {
-    const dayNum = Math.floor(Date.now() / 86400000);
     answer = pool[dayNum % pool.length];
   } else {
     answer = active().brain.pickWeak(pool, 1)[0] || pool[Math.floor(Math.random() * pool.length)];
@@ -171,14 +173,14 @@ function finish(won) {
   const brain = active().brain;
   brain.report(answer.es, { correct: won, weight: WEIGHT });
   const data = active().data;
+  if (daily) data.palabrleDaily = Math.floor(Date.now() / 86400000);
   let xp = 0;
   if (won) {
     data.palabrleWins = (data.palabrleWins || 0) + 1;
     xp = 20 + (TRIES - row) * 8;
-    addXP(xp);
-  } else {
-    saveNow();
   }
+  addXP(xp); // always — the streak counts even on a loss
+  saveNow();
   speak(answer.es);
   $("pl-over-title").textContent = won ? "¡ÉSO!" : "NI MODO…";
   $("pl-over-stats").textContent =

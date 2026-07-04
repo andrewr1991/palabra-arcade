@@ -4,8 +4,10 @@ import { CATEGORIES } from "./data/words.js";
 import * as profile from "./profile.js";
 import * as custom from "./customwords.js";
 import { allWords } from "./customwords.js";
-import { speak, speakButton } from "./audio.js";
+import { speak, speakButton, listSpanishVoices, currentVoice } from "./audio.js";
 import { accentBar } from "./ui.js";
+import { getSettings, setSetting, requestNotifyPermission } from "./settings.js";
+import { t, applyStatic } from "./i18n.js";
 import { ACHIEVEMENTS, checkAchievements } from "./achievements.js";
 import { initBlaster, enterBlaster } from "./games/blaster.js";
 import { initMatch, enterMatch } from "./games/match.js";
@@ -17,7 +19,7 @@ import { initStudy, enterNuevas, enterRepaso } from "./study.js";
 
 const $ = (id) => document.getElementById(id);
 const SCREENS = ["hub", "codex", "blaster", "match", "perfil",
-  "loteria", "palabrle", "clasificador", "ahorcado", "nuevas", "repaso", "taller"];
+  "loteria", "palabrle", "clasificador", "ahorcado", "nuevas", "repaso", "taller", "ajustes"];
 
 function showScreen(name) {
   for (const s of SCREENS) $("screen-" + s).classList.toggle("hidden", s !== name);
@@ -70,18 +72,18 @@ function renderHub() {
     alert.classList.add("hidden");
   }
 
-  $("hub-blaster-high").textContent = p.data.blasterHigh ? `high score: ${p.data.blasterHigh}` : "juega tu primera partida";
-  $("hub-match-best").textContent = p.data.matchBest ? `mejor: ${p.data.matchBest.moves} movimientos` : "juega tu primera partida";
-  $("hub-loteria-meta").textContent = p.data.loteriaWins ? `${p.data.loteriaWins} lotería${p.data.loteriaWins > 1 ? "s" : ""} ganada${p.data.loteriaWins > 1 ? "s" : ""}` : "¡corre la primera!";
-  $("hub-palabrle-meta").textContent = p.data.palabrleWins ? `${p.data.palabrleWins} adivinadas` : "palabra del día lista";
-  $("hub-clasificador-meta").textContent = p.data.clasificadorBest ? `mejor: ${p.data.clasificadorBest} puntos` : "teclas 1, 2, 3";
-  $("hub-ahorcado-meta").textContent = p.data.ahorcadoWins ? `${p.data.ahorcadoWins} salvadas` : "6 errores y ni modo";
+  $("hub-blaster-high").textContent = p.data.blasterHigh ? `high score: ${p.data.blasterHigh}` : t("playFirst");
+  $("hub-match-best").textContent = p.data.matchBest ? `mejor: ${p.data.matchBest.moves} mov.` : t("playFirst");
+  $("hub-loteria-meta").textContent = p.data.loteriaWins ? `${p.data.loteriaWins} 🫘` : t("runFirst");
+  $("hub-palabrle-meta").textContent = p.data.palabrleWins ? `${p.data.palabrleWins} 🟩` : t("dailyReady");
+  $("hub-clasificador-meta").textContent = p.data.clasificadorBest ? `mejor: ${p.data.clasificadorBest} pts` : t("keys123");
+  $("hub-ahorcado-meta").textContent = p.data.ahorcadoWins ? `${p.data.ahorcadoWins} 💀` : t("niModo");
 
-  $("hub-repaso-meta").textContent = s.known ? `${Math.min(10, fading.length + s.learning)} tarjetas listas` : "aprende algo primero";
-  $("hub-nuevas-meta").textContent = s.new ? `${s.new} por descubrir` : "¡todas descubiertas!";
+  $("hub-repaso-meta").textContent = s.known ? `${Math.min(10, fading.length + s.learning)} ${t("cardsReady")}` : t("learnFirst");
+  $("hub-nuevas-meta").textContent = s.new ? `${s.new} ${t("toDiscover")}` : t("allDiscovered");
   $("hub-taller-meta").textContent = custom.customWords().length
-    ? `${custom.customWords().length} palabra${custom.customWords().length > 1 ? "s" : ""} tuya${custom.customWords().length > 1 ? "s" : ""}`
-    : "agrega las tuyas";
+    ? `${custom.customWords().length} 🛠️`
+    : t("addYours");
 
   renderProfileSelect();
   checkAchievements(profile.levelInfo);
@@ -125,16 +127,16 @@ function renderPerfil() {
   const acc = ok + bad ? Math.round((ok / (ok + bad)) * 100) + "%" : "—";
 
   const metrics = [
-    ["palabras conocidas", `${s.known} / ${s.total}`],
-    ["dominadas", s.mastered, "gold"],
-    ["fuertes", s.strong, "green"],
-    ["olvidándose", s.fading, s.fading ? "red" : ""],
-    ["precisión global", acc],
-    ["respuestas totales", ok + bad],
-    ["racha actual", `🔥 ${d.streak || 0} día${d.streak === 1 ? "" : "s"}`],
-    ["mejor racha", `🔥 ${d.bestStreak || d.streak || 0}`],
-    ["high score — blaster", d.blasterHigh || "—"],
-    ["mejor memoria", d.matchBest ? `${d.matchBest.moves} mov.` : "—"],
+    [t("wordsKnown"), `${s.known} / ${s.total}`],
+    [t("mastered"), s.mastered, "gold"],
+    [t("strong"), s.strong, "green"],
+    [t("fadingLbl"), s.fading, s.fading ? "red" : ""],
+    [t("accuracy"), acc],
+    [t("totalAnswers"), ok + bad],
+    [t("streakNow"), `🔥 ${d.streak || 0} ${d.streak === 1 ? t("day") : t("days")}`],
+    [t("bestStreak"), `🔥 ${d.bestStreak || d.streak || 0}`],
+    [t("blasterHigh"), d.blasterHigh || "—"],
+    [t("matchBest"), d.matchBest ? `${d.matchBest.moves} mov.` : "—"],
   ];
   $("pf-metrics").innerHTML = "";
   for (const [label, value, tone] of metrics) {
@@ -370,23 +372,82 @@ $("tw-import-file").addEventListener("change", async (e) => {
   e.target.value = "";
 });
 
-// accent helpers under the typing inputs
-$("rp-answer-zone").appendChild(accentBar($("rp-input")));
+// accent helper under the blaster input (study screens add their own)
 $("bl-input-bar").insertAdjacentElement("afterend", accentBar($("bl-answer")));
+
+// ── Ajustes (settings) ───────────────────────────────────────────
+function renderAjustes() {
+  const cfg = getSettings();
+  $("aj-sfx").value = Math.round(cfg.sfxVol * 100);
+  $("aj-ttsvol").value = Math.round(cfg.ttsVol * 100);
+  $("aj-ttsrate").value = Math.round(cfg.ttsRate * 100);
+  $("aj-sfx-val").textContent = $("aj-sfx").value + "%";
+  $("aj-ttsvol-val").textContent = $("aj-ttsvol").value + "%";
+  $("aj-ttsrate-val").textContent = (cfg.ttsRate).toFixed(2) + "×";
+  $("aj-lang").value = cfg.lang;
+  $("aj-reminder").checked = cfg.reminderOn;
+  $("aj-reminder-time").value = cfg.reminderTime;
+
+  const sel = $("aj-voice");
+  sel.innerHTML = "";
+  const voices = listSpanishVoices();
+  if (!voices.length) {
+    sel.appendChild(new Option("(no hay voces en español)", ""));
+  } else {
+    const cur = currentVoice();
+    for (const v of voices) {
+      const opt = new Option(`${v.name} (${v.lang})`, v.voiceURI);
+      if (cur && v.voiceURI === cur.voiceURI) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  }
+}
+
+$("btn-ajustes").addEventListener("click", () => { showScreen("ajustes"); renderAjustes(); });
+$("aj-back").addEventListener("click", () => showScreen("hub"));
+$("aj-sfx").addEventListener("input", (e) => {
+  setSetting("sfxVol", e.target.value / 100);
+  $("aj-sfx-val").textContent = e.target.value + "%";
+});
+$("aj-ttsvol").addEventListener("input", (e) => {
+  setSetting("ttsVol", e.target.value / 100);
+  $("aj-ttsvol-val").textContent = e.target.value + "%";
+});
+$("aj-ttsrate").addEventListener("input", (e) => {
+  setSetting("ttsRate", e.target.value / 100);
+  $("aj-ttsrate-val").textContent = (e.target.value / 100).toFixed(2) + "×";
+});
+$("aj-voice").addEventListener("change", (e) => { setSetting("voiceURI", e.target.value); speak("¡Órale! Así sueno yo."); });
+$("aj-voice-test").addEventListener("click", () => speak("Mi esposa cocina mejor que yo. ¡Órale!"));
+$("aj-lang").addEventListener("change", (e) => {
+  setSetting("lang", e.target.value);
+  applyStatic();
+  renderHub();
+});
+$("aj-reminder").addEventListener("change", async (e) => {
+  if (e.target.checked) {
+    const perm = await requestNotifyPermission();
+    if (perm !== "granted") { e.target.checked = false; return; }
+  }
+  setSetting("reminderOn", e.target.checked);
+});
+$("aj-reminder-time").addEventListener("change", (e) => setSetting("reminderTime", e.target.value));
+
+applyStatic();
 
 $("hub-profile-link").addEventListener("click", () => showScreen("perfil"));
 $("pf-back").addEventListener("click", () => showScreen("hub"));
 $("pf-export").addEventListener("click", profile.exportSave);
 $("pf-rename").addEventListener("click", async () => {
-  const name = await askDialog("Nuevo nombre del perfil:", { input: true });
+  const name = await askDialog(t("renameProfile"), { input: true });
   if (name) { profile.renameProfile(name); renderPerfil(); }
 });
 $("pf-delete").addEventListener("click", async () => {
   if (profile.listProfiles().length <= 1) {
-    askDialog("No puedes eliminar el único perfil.");
+    askDialog(t("cantDeleteOnly"));
     return;
   }
-  const sure = await askDialog(`¿Eliminar el perfil "${profile.active().data.name}"? Esta acción no se puede deshacer.`);
+  const sure = await askDialog(`${t("deleteConfirm")} "${profile.active().data.name}"? ${t("noUndo")}`);
   if (sure) {
     profile.deleteProfile(profile.active().id);
     showScreen("hub");

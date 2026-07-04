@@ -876,6 +876,44 @@ button { font-family: inherit; }
   cursor: pointer;
 }
 
+/* ── Ajustes ─────────────────────────────────────────────────── */
+.aj-group {
+  background: var(--panel);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 6px 18px 14px;
+  margin-bottom: 14px;
+}
+.aj-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+.aj-row label { min-width: 190px; font-size: 15px; }
+.aj-row input[type="range"] { flex: 1; min-width: 140px; accent-color: var(--neon); }
+.aj-row select, .aj-row input[type="time"] {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  padding: 8px 10px;
+  max-width: 340px;
+}
+.aj-row input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--neon); }
+.aj-val { min-width: 52px; text-align: right; font-size: 14px; color: var(--muted); }
+.aj-note { font-size: 13px; margin: 4px 0 8px; }
+
+/* nv type-it step */
+.nv-type-prompt { font-size: 19px; margin-bottom: 8px; }
+.nv-type-feedback { min-height: 24px; font-size: 17px; font-weight: 700; margin: 10px 0; }
+.nv-fb-good { color: var(--neon); }
+.nv-fb-bad { color: var(--red); }
+#nv-type-zone .accent-bar { justify-content: center; }
+
 /* ── Perfil: charts & achievements ───────────────────────────── */
 .pf-chart {
   display: flex;

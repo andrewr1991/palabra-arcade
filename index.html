@@ -27,6 +27,7 @@
       <select id="profile-select" title="Perfil"></select>
       <button id="btn-export" class="icon-btn" title="Exportar partida guardada">💾</button>
       <button id="btn-import" class="icon-btn" title="Importar partida guardada">📂</button>
+      <button id="btn-ajustes" class="icon-btn" title="Ajustes">⚙️</button>
       <input id="import-file" type="file" accept=".json" class="hidden">
     </div>
   </header>
@@ -376,6 +377,20 @@
       <button id="nv-next" class="big-btn">SIGUIENTE →</button>
     </div>
 
+    <div id="nv-type" class="nv-card hidden">
+      <p id="nv-type-prompt" class="nv-type-prompt"></p>
+      <p id="nv-type-ej" class="muted"></p>
+      <div id="nv-type-zone">
+        <input id="nv-type-input" type="text" autocomplete="off" spellcheck="false" class="rp-input" placeholder="escríbela en español">
+      </div>
+      <p id="nv-type-feedback" class="nv-type-feedback"></p>
+      <div class="rp-btns" style="gap:10px;">
+        <button id="nv-type-speak" class="icon-btn" title="Escuchar">🔊</button>
+        <button id="nv-type-check" class="big-btn" style="margin:0;">CHECAR</button>
+        <button id="nv-type-continue" class="big-btn hidden" style="margin:0;">SIGUIENTE →</button>
+      </div>
+    </div>
+
     <div id="nv-quiz" class="nv-card hidden">
       <p class="muted">quiz <span id="nv-quiz-progress"></span> — ¿qué significa…</p>
       <div class="nv-word-row"><span id="nv-quiz-word"></span></div>
@@ -428,6 +443,60 @@
       <button id="rp-again" class="big-btn">OTRO REPASO</button>
       <button id="rp-back" class="small-btn">Back to arcade</button>
     </div>
+  </div>
+</div>
+
+<!-- ═══ AJUSTES ═══ -->
+<div id="screen-ajustes" class="screen hidden">
+  <header class="sub-header">
+    <button id="aj-back" class="back-btn">← Volver</button>
+    <h2>Ajustes</h2>
+  </header>
+
+  <div class="aj-group">
+    <h3 class="pf-h">🔊 Sonido</h3>
+    <div class="aj-row">
+      <label id="lbl-sfx" for="aj-sfx">Volumen de efectos</label>
+      <input id="aj-sfx" type="range" min="0" max="100" step="5">
+      <span id="aj-sfx-val" class="aj-val"></span>
+    </div>
+    <div class="aj-row">
+      <label id="lbl-ttsvol" for="aj-ttsvol">Volumen de la voz</label>
+      <input id="aj-ttsvol" type="range" min="0" max="100" step="5">
+      <span id="aj-ttsvol-val" class="aj-val"></span>
+    </div>
+    <div class="aj-row">
+      <label id="lbl-ttsrate" for="aj-ttsrate">Velocidad de la voz</label>
+      <input id="aj-ttsrate" type="range" min="50" max="120" step="5">
+      <span id="aj-ttsrate-val" class="aj-val"></span>
+    </div>
+    <div class="aj-row">
+      <label id="lbl-voice" for="aj-voice">Voz en español</label>
+      <select id="aj-voice"></select>
+      <button id="aj-voice-test" class="small-btn">🔊 Probar</button>
+    </div>
+    <p id="aj-voice-note" class="muted aj-note"></p>
+  </div>
+
+  <div class="aj-group">
+    <h3 class="pf-h">🌐 Idioma</h3>
+    <div class="aj-row">
+      <label id="lbl-lang" for="aj-lang">Idioma de la interfaz</label>
+      <select id="aj-lang">
+        <option value="es">Español</option>
+        <option value="en">English</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="aj-group">
+    <h3 class="pf-h">🔔 Notificaciones</h3>
+    <div class="aj-row">
+      <label id="lbl-reminder" for="aj-reminder">Recordatorio diario</label>
+      <input id="aj-reminder" type="checkbox">
+      <input id="aj-reminder-time" type="time">
+    </div>
+    <p id="aj-reminder-note" class="muted aj-note"></p>
   </div>
 </div>
 

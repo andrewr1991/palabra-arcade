@@ -122,10 +122,9 @@ function finish(won) {
   if (won) {
     data.ahorcadoWins = (data.ahorcadoWins || 0) + 1;
     xp = 15 + (MAX_WRONG - wrong) * 4;
-    addXP(xp);
-  } else {
-    saveNow();
   }
+  addXP(xp); // always — the streak counts even on a loss
+  saveNow();
   speak(word.es);
   $("ah-over-title").textContent = won ? "¡TE SALVASTE!" : "NI MODO…";
   $("ah-over-stats").textContent =

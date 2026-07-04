@@ -35,7 +35,18 @@ function startRound() {
   $("mt-moves").textContent = "0";
   $("mt-found").textContent = `0 / ${PAIRS}`;
 
-  const words = active().brain.requestWords(PAIRS, { newCount: 2 });
+  // over-fetch, then drop words whose English display collides
+  // (saber/conocer are both "to know" — two identical cards would be unfair)
+  const fetched = active().brain.requestWords(PAIRS * 2, { newCount: 4 });
+  const seenEn = new Set();
+  const words = [];
+  for (const w of fetched) {
+    const en = w.en[0].toLowerCase();
+    if (seenEn.has(en)) continue;
+    seenEn.add(en);
+    words.push(w);
+    if (words.length === PAIRS) break;
+  }
   const cards = [];
   words.forEach((w, i) => {
     cards.push({ pair: i, es: w.es, side: "es", label: w.es });
