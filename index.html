@@ -38,8 +38,7 @@
     </div>
   </header>
 
-  <h1 class="hub-title">PALABRA<span class="accent">ARCADE</span></h1>
-  <p class="hub-tagline">Un cerebro, muchos juegos. Todo lo que aprendas te sigue.</p>
+  <img id="hub-hero" src="assets/ui/hero.png" alt="Palabra Arcade">
   <div id="pepe-home"></div>
 
   <div id="hub-stats"></div>
@@ -52,77 +51,64 @@
     <span>🎯</span><span>¿Nuevo por aquí pero no principiante? Haz la prueba de nivel — 12 preguntas y los juegos se ajustan a ti.</span>
   </div>
 
-  <h3 class="hub-section">📚 Estudio</h3>
-  <div class="game-grid">
-    <button class="game-card study-card" id="card-nuevas">
-      <span class="game-icon">🌱</span>
-      <span class="game-name">Palabras nuevas</span>
-      <span class="game-desc">Conoce 5 palabras nuevas con ejemplos y un mini-quiz.</span>
+  <h3 class="hub-section">Estudio</h3>
+  <div class="game-grid grid-2">
+    <button class="game-card cab" id="card-nuevas">
+      <img src="assets/ui/panel-nuevas.png" alt="Palabras nuevas">
       <span class="game-meta" id="hub-nuevas-meta"></span>
     </button>
-    <button class="game-card study-card" id="card-repaso">
-      <span class="game-icon">🔁</span>
-      <span class="game-name">Repaso</span>
-      <span class="game-desc">Tarjetas de lo que se te está olvidando. Cinco minutos.</span>
+    <button class="game-card cab" id="card-repaso">
+      <img src="assets/ui/panel-repaso.png" alt="Repaso">
       <span class="game-meta" id="hub-repaso-meta"></span>
     </button>
   </div>
 
-  <h3 class="hub-section">🕹️ Juegos</h3>
-  <div class="game-grid">
-    <button class="game-card" id="card-blaster">
-      <span class="game-icon">🚀</span>
-      <span class="game-name">Palabra Blaster</span>
-      <span class="game-desc">Dispara traduciendo bajo presión. Jefes de conjugación.</span>
+  <h3 class="hub-section">Juegos</h3>
+  <div class="game-grid grid-3">
+    <button class="game-card cab" id="card-blaster">
+      <img src="assets/ui/cab-blaster.png" alt="Palabra Blaster">
       <span class="game-meta" id="hub-blaster-high"></span>
     </button>
-    <button class="game-card" id="card-match">
-      <span class="game-icon">🎴</span>
-      <span class="game-name">Memoria</span>
-      <span class="game-desc">Empareja español con inglés. Tranquilo pero traicionero.</span>
+    <button class="game-card cab" id="card-match">
+      <img src="assets/ui/cab-memoria.png" alt="Memoria">
       <span class="game-meta" id="hub-match-best"></span>
     </button>
-    <button class="game-card" id="card-loteria">
-      <span class="game-icon">🫘</span>
-      <span class="game-name">Lotería</span>
-      <span class="game-desc">Escucha la palabra, encuentra la imagen. Como con la abuela.</span>
+    <button class="game-card cab" id="card-loteria">
+      <img src="assets/ui/cab-loteria.png" alt="Lotería">
       <span class="game-meta" id="hub-loteria-meta"></span>
     </button>
-    <button class="game-card" id="card-palabrle">
-      <span class="game-icon">🟩</span>
-      <span class="game-name">Palabrle</span>
-      <span class="game-desc">Adivina la palabra del día en 6 intentos. Con pista en inglés.</span>
+    <button class="game-card cab" id="card-palabrle">
+      <img src="assets/ui/cab-palabrle.png" alt="Palabrle">
       <span class="game-meta" id="hub-palabrle-meta"></span>
     </button>
-    <button class="game-card" id="card-clasificador">
-      <span class="game-icon">🗂️</span>
-      <span class="game-name">Clasificador</span>
-      <span class="game-desc">Palabras que caen — mándalas al bote correcto (teclas 1-2-3).</span>
+    <button class="game-card cab" id="card-clasificador">
+      <img src="assets/ui/cab-clasificador.png" alt="Clasificador">
       <span class="game-meta" id="hub-clasificador-meta"></span>
     </button>
-    <button class="game-card" id="card-ahorcado">
-      <span class="game-icon">💀</span>
-      <span class="game-name">Ahorcado</span>
-      <span class="game-desc">El clásico. Adivina las letras antes de que sea tarde.</span>
+    <button class="game-card cab" id="card-ahorcado">
+      <img src="assets/ui/cab-ahorcado.png" alt="Ahorcado">
       <span class="game-meta" id="hub-ahorcado-meta"></span>
     </button>
   </div>
 
-  <h3 class="hub-section">📦 Colección</h3>
-  <div class="game-grid">
-    <button class="game-card game-card-codex" id="card-codex">
-      <span class="game-icon">📖</span>
-      <span class="game-name">Códice</span>
-      <span class="game-desc">Tu colección de palabras — cada una con su fuerza actual.</span>
+  <h3 class="hub-section">Colección</h3>
+  <div class="game-grid grid-2">
+    <button class="game-card cab" id="card-codex">
+      <img src="assets/ui/panel-codice.png" alt="Códice">
       <span class="game-meta">colecciónalas todas</span>
     </button>
-    <button class="game-card game-card-codex" id="card-taller">
-      <span class="game-icon">🛠️</span>
-      <span class="game-name">Taller de palabras</span>
-      <span class="game-desc">Agrega tus propias palabras — o las que te enseñe tu esposa.</span>
+    <button class="game-card cab" id="card-taller">
+      <img src="assets/ui/panel-taller.png" alt="Taller de palabras">
       <span class="game-meta" id="hub-taller-meta"></span>
     </button>
   </div>
+
+  <nav id="hub-nav">
+    <button class="nav-btn" id="nav-misiones"><img src="assets/ui/nav-misiones.png" alt="Misiones"></button>
+    <button class="nav-btn" id="nav-logros"><img src="assets/ui/nav-logros.png" alt="Logros"></button>
+    <button class="nav-btn" id="nav-tienda"><img src="assets/ui/nav-tienda.png" alt="Tienda"></button>
+    <button class="nav-btn" id="nav-ajustes"><img src="assets/ui/nav-ajustes.png" alt="Ajustes"></button>
+  </nav>
 </div>
 
 <!-- ═══ PERFIL ═══ -->

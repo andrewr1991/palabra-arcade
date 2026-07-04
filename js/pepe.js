@@ -40,20 +40,29 @@ let bubble = null, sprite = null, bubbleTimer = null;
 export function initPepe(container) {
   const wrap = document.createElement("div");
   wrap.id = "pepe";
-  const canvas = document.createElement("canvas");
-  canvas.width = 21; canvas.height = 18;
-  canvas.className = "pepe-canvas";
-  const ctx = canvas.getContext("2d");
-  PIXELS.forEach((row, y) => {
-    [...row].forEach((ch, x) => {
-      if (COLORS[ch]) { ctx.fillStyle = COLORS[ch]; ctx.fillRect(x, y, 1, 1); }
+  const img = document.createElement("img");
+  img.className = "pepe-img";
+  img.alt = "Pepe";
+  img.src = "assets/ui/pepe-1.png";
+  img.onerror = () => {
+    // sliced art missing — fall back to the hand-coded pixel sprite
+    const canvas = document.createElement("canvas");
+    canvas.width = 21; canvas.height = 18;
+    canvas.className = "pepe-canvas";
+    const ctx = canvas.getContext("2d");
+    PIXELS.forEach((row, y) => {
+      [...row].forEach((ch, x) => {
+        if (COLORS[ch]) { ctx.fillStyle = COLORS[ch]; ctx.fillRect(x, y, 1, 1); }
+      });
     });
-  });
+    img.replaceWith(canvas);
+    sprite = canvas;
+  };
   bubble = document.createElement("div");
   bubble.className = "pepe-bubble hidden";
-  sprite = canvas;
+  sprite = img;
   wrap.appendChild(bubble);
-  wrap.appendChild(canvas);
+  wrap.appendChild(img);
   container.appendChild(wrap);
 
   window.addEventListener("pa-levelup", (e) =>
@@ -64,6 +73,9 @@ export function initPepe(container) {
 
 export function say(text, bounce = false) {
   if (!bubble) return;
+  if (sprite && sprite.tagName === "IMG") {
+    sprite.src = bounce ? "assets/ui/pepe-3.png" : "assets/ui/pepe-1.png";
+  }
   bubble.textContent = text;
   bubble.classList.remove("hidden");
   if (bounce) {

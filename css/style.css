@@ -1055,6 +1055,44 @@ button { font-family: inherit; }
   border-top-color: #241a10;
 }
 
+/* sliced-art hub (arcade v3) */
+#hub-hero {
+  display: block;
+  width: 100%;
+  max-width: 700px;
+  margin: 16px auto 6px;
+  image-rendering: pixelated;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+}
+.game-grid.grid-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.game-grid.grid-3 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.game-card.cab {
+  padding: 0 0 8px;
+  background: var(--panel);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+}
+.game-card.cab img {
+  display: block;
+  width: 100%;
+  image-rendering: pixelated;
+  border-radius: 8px 8px 0 0;
+}
+.game-card.cab .game-meta { padding: 6px 12px 2px; }
+.game-card.cab:hover { border-color: var(--gold); transform: translateY(-4px); }
+#hub-nav {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px 0 8px;
+  flex-wrap: wrap;
+}
+.nav-btn { background: none; border: none; padding: 0; cursor: pointer; }
+.nav-btn img { display: block; height: 46px; image-rendering: pixelated; border-radius: 8px; }
+.nav-btn:hover img { transform: translateY(-2px); filter: brightness(1.15); }
+#pepe .pepe-img { width: 112px; image-rendering: pixelated; }
+
 /* CRT scanlines (toggle in Ajustes) */
 body.crt::before {
   content: "";

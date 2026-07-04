@@ -411,6 +411,13 @@ document.body.classList.toggle("crt", getSettings().crt);
 initPepe($("pepe-home"));
 initSprites();
 
+$("nav-logros").addEventListener("click", () => showScreen("perfil"));
+$("nav-ajustes").addEventListener("click", () => { showScreen("ajustes"); renderAjustes(); });
+$("nav-misiones").addEventListener("click", () =>
+  askDialog("Misiones diarias — ¡próximamente! Está en la lista de pendientes."));
+$("nav-tienda").addEventListener("click", () =>
+  askDialog("La tienda abrirá cuando haya monedas que gastar. ¡Próximamente!"));
+
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   navigator.serviceWorker.register("sw.js").catch(() => {});
 }
