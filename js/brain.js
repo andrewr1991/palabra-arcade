@@ -3,10 +3,9 @@
 // Knowledge record per word: { st: stability in days, last: ms timestamp,
 //   seen, ok, bad } — retention decays as exp(-elapsedDays / st).
 
-import { WORDS } from "./data/words.js";
+import { allWords } from "./customwords.js";
 
 const DAY = 86400000;
-export const BY_ES = new Map(WORDS.map((w) => [w.es, w]));
 
 export class Brain {
   constructor(state) {
@@ -53,9 +52,9 @@ export class Brain {
 
   // A game session asks: "give me n words". Serves weakest known words
   // first (that's the review) plus a drip of brand-new ones.
-  requestWords(n, { newCount = Math.ceil(n * 0.2) } = {}) {
+  requestWords(n, { newCount = Math.ceil(n * 0.2), pool = allWords() } = {}) {
     const known = [], fresh = [];
-    for (const w of WORDS) (this.info(w.es) ? known : fresh).push(w);
+    for (const w of pool) (this.info(w.es) ? known : fresh).push(w);
     known.sort((a, b) => this.strengthOf(a.es) - this.strengthOf(b.es));
     shuffle(fresh);
 
@@ -63,8 +62,8 @@ export class Brain {
     const nKnown = Math.min(n - nNew, known.length);
     // sample from a 2× window of the weakest so waves aren't identical
     const windowSize = Math.min(known.length, Math.max(nKnown * 2, nKnown));
-    const pool = shuffle(known.slice(0, windowSize)).slice(0, nKnown);
-    const picked = [...pool, ...fresh.slice(0, nNew)];
+    const windowPick = shuffle(known.slice(0, windowSize)).slice(0, nKnown);
+    const picked = [...windowPick, ...fresh.slice(0, nNew)];
     // top up if one side ran dry
     let i = nNew;
     while (picked.length < n && i < fresh.length) picked.push(fresh[i++]);
@@ -74,14 +73,29 @@ export class Brain {
   }
 
   stats() {
-    const s = { total: WORDS.length, new: 0, learning: 0, strong: 0, mastered: 0, fading: 0 };
-    for (const w of WORDS) s[this.statusOf(w.es)]++;
+    const words = allWords();
+    const s = { total: words.length, new: 0, learning: 0, strong: 0, mastered: 0, fading: 0 };
+    for (const w of words) s[this.statusOf(w.es)]++;
     s.known = s.total - s.new;
     return s;
   }
 
   fadingWords() {
-    return WORDS.filter((w) => this.statusOf(w.es) === "fading");
+    return allWords().filter((w) => this.statusOf(w.es) === "fading");
+  }
+
+  // weakest-first sample from an arbitrary pool (e.g. one category, emoji words)
+  pickWeak(pool, n) {
+    const seen = pool.filter((w) => this.info(w.es));
+    const fresh = shuffle(pool.filter((w) => !this.info(w.es)));
+    seen.sort((a, b) => this.strengthOf(a.es) - this.strengthOf(b.es));
+    const windowed = shuffle(seen.slice(0, n * 2)).slice(0, n);
+    const out = [...windowed];
+    let i = 0;
+    while (out.length < n && i < fresh.length) out.push(fresh[i++]);
+    let j = n * 2;
+    while (out.length < n && j < seen.length) out.push(seen[j++]);
+    return shuffle(out.slice(0, n));
   }
 }
 

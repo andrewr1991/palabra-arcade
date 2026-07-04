@@ -40,8 +40,31 @@ fading words are flagged on the hub and prioritized in every game.
 
 - **Palabra Blaster** — typing shooter. Spanish→English (and reverse from wave 3),
   words you've missed attack as armored enemies, conjugation boss fights every
-  5 waves. Full-strength evidence.
-- **Memoria** — match Spanish/English pairs. Recognition-level evidence.
+  5 waves. Full-strength evidence (1.0).
+- **Memoria** — match Spanish/English pairs. Recognition evidence (0.4).
+- **Lotería** — Mexican bingo. The caller speaks a word (es-MX voice); find its
+  picture. Word→image, no English involved (0.5).
+- **Palabrle** — Wordle with an English clue. Daily word + free play with your
+  weak words. ñ is its own letter, accents optional (0.6).
+- **Clasificador** — falling words, sort them into category bins with keys 1-2-3 (0.3).
+- **Ahorcado** — hangman with the brain picking what you need to practice (0.6).
+
+## Estudio
+
+- **Palabras nuevas** — guided intro: 5 new words with example sentences and
+  audio, then a mini-quiz that seeds them into the brain.
+- **Repaso** — SRS flashcards of exactly what's due: fading and weak words,
+  typed answers, missed cards return at the end of the deck.
+
+## Extras
+
+- Audio everywhere via the browser's Mexican Spanish voice (es-MX).
+- Example sentences for all 242 built-in words.
+- Accent buttons (á é í ó ú ñ ü) under typing inputs.
+- **Taller de palabras** — add your own words (with sentence, emoji, category);
+  export/import packs as JSON to share.
+- Profile page: XP charts (14 days), words-known history, 15 achievements,
+  per-category progress, weakest/strongest words, rename/export/delete.
 
 ## Adding a game
 

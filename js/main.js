@@ -1,18 +1,34 @@
-// Palabra Arcade — hub, codex, routing, profile UI.
+// Palabra Arcade — hub, codex, taller, routing, profile UI.
 
-import { WORDS, CATEGORIES } from "./data/words.js";
+import { CATEGORIES } from "./data/words.js";
 import * as profile from "./profile.js";
+import * as custom from "./customwords.js";
+import { allWords } from "./customwords.js";
+import { speak, speakButton } from "./audio.js";
+import { accentBar } from "./ui.js";
+import { ACHIEVEMENTS, checkAchievements } from "./achievements.js";
 import { initBlaster, enterBlaster } from "./games/blaster.js";
 import { initMatch, enterMatch } from "./games/match.js";
+import { initLoteria, enterLoteria } from "./games/loteria.js";
+import { initPalabrle, enterPalabrle } from "./games/palabrle.js";
+import { initClasificador, enterClasificador } from "./games/clasificador.js";
+import { initAhorcado, enterAhorcado } from "./games/ahorcado.js";
+import { initStudy, enterNuevas, enterRepaso } from "./study.js";
 
 const $ = (id) => document.getElementById(id);
-const SCREENS = ["hub", "codex", "blaster", "match", "perfil"];
+const SCREENS = ["hub", "codex", "blaster", "match", "perfil",
+  "loteria", "palabrle", "clasificador", "ahorcado", "nuevas", "repaso", "taller"];
 
 function showScreen(name) {
   for (const s of SCREENS) $("screen-" + s).classList.toggle("hidden", s !== name);
   if (name === "hub") renderHub();
   if (name === "codex") renderCodex();
   if (name === "perfil") renderPerfil();
+  if (name === "taller") renderTaller();
+}
+
+function onSessionEnd() {
+  checkAchievements(profile.levelInfo);
 }
 
 // ── Hub ──────────────────────────────────────────────────────────
@@ -56,8 +72,19 @@ function renderHub() {
 
   $("hub-blaster-high").textContent = p.data.blasterHigh ? `high score: ${p.data.blasterHigh}` : "juega tu primera partida";
   $("hub-match-best").textContent = p.data.matchBest ? `mejor: ${p.data.matchBest.moves} movimientos` : "juega tu primera partida";
+  $("hub-loteria-meta").textContent = p.data.loteriaWins ? `${p.data.loteriaWins} lotería${p.data.loteriaWins > 1 ? "s" : ""} ganada${p.data.loteriaWins > 1 ? "s" : ""}` : "¡corre la primera!";
+  $("hub-palabrle-meta").textContent = p.data.palabrleWins ? `${p.data.palabrleWins} adivinadas` : "palabra del día lista";
+  $("hub-clasificador-meta").textContent = p.data.clasificadorBest ? `mejor: ${p.data.clasificadorBest} puntos` : "teclas 1, 2, 3";
+  $("hub-ahorcado-meta").textContent = p.data.ahorcadoWins ? `${p.data.ahorcadoWins} salvadas` : "6 errores y ni modo";
+
+  $("hub-repaso-meta").textContent = s.known ? `${Math.min(10, fading.length + s.learning)} tarjetas listas` : "aprende algo primero";
+  $("hub-nuevas-meta").textContent = s.new ? `${s.new} por descubrir` : "¡todas descubiertas!";
+  $("hub-taller-meta").textContent = custom.customWords().length
+    ? `${custom.customWords().length} palabra${custom.customWords().length > 1 ? "s" : ""} tuya${custom.customWords().length > 1 ? "s" : ""}`
+    : "agrega las tuyas";
 
   renderProfileSelect();
+  checkAchievements(profile.levelInfo);
 }
 
 function renderProfileSelect() {
@@ -123,7 +150,8 @@ function renderPerfil() {
   const cats = $("pf-cats");
   cats.innerHTML = "";
   for (const [key, label] of Object.entries(CATEGORIES)) {
-    const words = WORDS.filter((w) => w.cat === key);
+    const words = allWords().filter((w) => w.cat === key);
+    if (!words.length) continue;
     const known = words.filter((w) => p.brain.statusOf(w.es) !== "new").length;
     const mastered = words.filter((w) => p.brain.statusOf(w.es) === "mastered").length;
     const pct = Math.round((known / words.length) * 100);
@@ -141,10 +169,58 @@ function renderPerfil() {
   }
 
   // weakest / strongest seen words
-  const seen = WORDS.filter((w) => p.brain.info(w.es));
+  const seen = allWords().filter((w) => p.brain.info(w.es));
   const byStrength = [...seen].sort((a, b) => p.brain.strengthOf(a.es) - p.brain.strengthOf(b.es));
   fillWordList($("pf-weak"), byStrength.slice(0, 5), p, "weak");
   fillWordList($("pf-strong"), byStrength.slice(-5).reverse(), p, "strong");
+
+  renderChart($("pf-chart-xp"), (day) => (d.history || {})[day] || 0, "");
+  $("pf-chart-known").classList.add("pf-chart-known");
+  renderChart($("pf-chart-known"), (day) => (d.knownLog || {})[day] ?? null, "carry");
+  renderAchievements(d);
+}
+
+function renderChart(el, valueFor, mode) {
+  el.innerHTML = "";
+  const days = [];
+  for (let i = 13; i >= 0; i--) {
+    const dt = new Date(Date.now() - i * 86400000);
+    days.push({ key: dt.toISOString().slice(0, 10), label: dt.getDate() });
+  }
+  let carry = 0;
+  const values = days.map((d) => {
+    let v = valueFor(d.key);
+    if (mode === "carry") {
+      if (v === null) v = carry; else carry = v;
+    }
+    return v || 0;
+  });
+  const max = Math.max(1, ...values);
+  days.forEach((d, i) => {
+    const bar = document.createElement("div");
+    bar.className = "pf-bar" + (i === days.length - 1 ? " today" : "");
+    bar.title = `${d.key}: ${values[i]}`;
+    bar.innerHTML = `<div class="pf-bar-fill"></div><span class="pf-bar-label"></span>`;
+    bar.querySelector(".pf-bar-fill").style.height = Math.round((values[i] / max) * 100) + "%";
+    bar.querySelector(".pf-bar-label").textContent = d.label;
+    el.appendChild(bar);
+  });
+}
+
+function renderAchievements(d) {
+  const box = $("pf-achievements");
+  box.innerHTML = "";
+  const earned = d.achieved || {};
+  const sorted = [...ACHIEVEMENTS].sort((a, b) => (earned[b.id] ? 1 : 0) - (earned[a.id] ? 1 : 0));
+  for (const a of sorted) {
+    const el = document.createElement("div");
+    el.className = "ach" + (earned[a.id] ? "" : " locked");
+    el.innerHTML = `<span class="ach-icon"></span><div><div class="ach-name"></div><div class="ach-desc"></div></div>`;
+    el.querySelector(".ach-icon").textContent = a.icon;
+    el.querySelector(".ach-name").textContent = a.name;
+    el.querySelector(".ach-desc").textContent = a.desc;
+    box.appendChild(el);
+  }
 }
 
 function fillWordList(el, words, p, tone) {
@@ -192,7 +268,7 @@ function renderCodexGrid() {
   const grid = $("cx-grid");
   grid.innerHTML = "";
   let shown = 0;
-  for (const w of WORDS) {
+  for (const w of allWords()) {
     if (cat && w.cat !== cat) continue;
     const st = p.brain.statusOf(w.es);
     if (status && st !== status) continue;
@@ -205,7 +281,9 @@ function renderCodexGrid() {
       <div class="cx-en"></div>
       <div class="cx-meter"><div class="cx-fill"></div></div>
       <div class="cx-status"></div>`;
-    card.querySelector(".cx-es").textContent = w.es;
+    const esEl = card.querySelector(".cx-es");
+    esEl.textContent = w.es;
+    esEl.appendChild(speakButton(w.es));
     card.querySelector(".cx-en").textContent = w.en[0];
     card.querySelector(".cx-fill").style.width = strength + "%";
     card.querySelector(".cx-status").textContent = st === "new" ? "?" : `${STATUS_LABEL[st]} · ${strength}%`;
@@ -214,10 +292,87 @@ function renderCodexGrid() {
   $("cx-count").textContent = `${shown} palabras`;
 }
 
+// ── Taller (word pack editor) ────────────────────────────────────
+function renderTaller() {
+  const catSel = $("tw-cat");
+  if (!catSel.options.length) {
+    for (const [key, label] of Object.entries(CATEGORIES)) catSel.appendChild(new Option(label, key));
+    catSel.value = "custom";
+  }
+  const list = $("tw-list");
+  list.innerHTML = "";
+  const words = custom.customWords();
+  $("tw-count").textContent = `${words.length} palabra${words.length === 1 ? "" : "s"} personalizada${words.length === 1 ? "" : "s"}`;
+  for (const w of words) {
+    const el = document.createElement("div");
+    el.className = "tw-word";
+    el.innerHTML = `<b></b><span></span><button class="tw-del" title="Eliminar">🗑</button>`;
+    el.querySelector("b").textContent = (w.emo ? w.emo + " " : "") + w.es;
+    el.querySelector("span").textContent = w.en.join(", ");
+    el.querySelector(".tw-del").addEventListener("click", async () => {
+      const sure = await askDialog(`¿Eliminar "${w.es}" de tu paquete?`);
+      if (sure) { custom.removeCustom(w.es); renderTaller(); }
+    });
+    list.appendChild(el);
+  }
+}
+
+function addTallerWord() {
+  const es = $("tw-es").value.trim();
+  const en = $("tw-en").value.split(",").map((s) => s.trim()).filter(Boolean);
+  if (!es || !en.length) { askDialog("Se necesita la palabra y al menos un significado."); return; }
+  const w = { es, en, cat: $("tw-cat").value || "custom" };
+  const ejEs = $("tw-ej-es").value.trim(), ejEn = $("tw-ej-en").value.trim();
+  if (ejEs) w.ej = [ejEs, ejEn || ""];
+  const emo = $("tw-emo").value.trim();
+  if (emo) w.emo = emo;
+  try {
+    custom.addCustom(w);
+    for (const id of ["tw-es", "tw-en", "tw-ej-es", "tw-ej-en", "tw-emo"]) $(id).value = "";
+    renderTaller();
+  } catch (err) {
+    askDialog(err.message);
+  }
+}
+
 // ── Wire up ──────────────────────────────────────────────────────
 profile.initProfiles();
-initBlaster({ onExit: () => showScreen("hub") });
-initMatch({ onExit: () => showScreen("hub") });
+const deps = { onExit: () => showScreen("hub"), onSessionEnd };
+initBlaster(deps);
+initMatch(deps);
+initLoteria(deps);
+initPalabrle(deps);
+initClasificador(deps);
+initAhorcado(deps);
+initStudy(deps);
+
+$("card-loteria").addEventListener("click", () => { showScreen("loteria"); enterLoteria(); });
+$("card-palabrle").addEventListener("click", () => { showScreen("palabrle"); enterPalabrle(); });
+$("card-clasificador").addEventListener("click", () => { showScreen("clasificador"); enterClasificador(); });
+$("card-ahorcado").addEventListener("click", () => { showScreen("ahorcado"); enterAhorcado(); });
+$("card-nuevas").addEventListener("click", () => { showScreen("nuevas"); enterNuevas(); });
+$("card-repaso").addEventListener("click", () => { showScreen("repaso"); enterRepaso(); });
+$("card-taller").addEventListener("click", () => showScreen("taller"));
+$("tw-back").addEventListener("click", () => showScreen("hub"));
+$("tw-add").addEventListener("click", addTallerWord);
+$("tw-export").addEventListener("click", custom.exportPack);
+$("tw-import").addEventListener("click", () => $("tw-import-file").click());
+$("tw-import-file").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const added = custom.importPack(await file.text());
+    askDialog(`Se agregaron ${added} palabra${added === 1 ? "" : "s"}.`);
+    renderTaller();
+  } catch (err) {
+    askDialog("No se pudo importar: " + err.message);
+  }
+  e.target.value = "";
+});
+
+// accent helpers under the typing inputs
+$("rp-answer-zone").appendChild(accentBar($("rp-input")));
+$("bl-input-bar").insertAdjacentElement("afterend", accentBar($("bl-answer")));
 
 $("hub-profile-link").addEventListener("click", () => showScreen("perfil"));
 $("pf-back").addEventListener("click", () => showScreen("hub"));

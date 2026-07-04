@@ -109,11 +109,13 @@ function finish() {
   const { leveledUp } = addXP(xp);
 
   const data = active().data;
+  if (moves === PAIRS) data.matchPerfect = true;
   const best = data.matchBest;
   if (!best || moves < best.moves || (moves === best.moves && secs < best.secs)) {
     data.matchBest = { moves, secs };
-    saveNow();
   }
+  saveNow();
+  if (deps.onSessionEnd) deps.onSessionEnd();
   $("mt-over-stats").textContent =
     `${moves} moves · ${secs}s · +${xp} XP${leveledUp ? " · ¡LEVEL UP!" : ""}` +
     (data.matchBest ? ` · best: ${data.matchBest.moves} moves` : "");

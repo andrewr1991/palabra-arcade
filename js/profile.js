@@ -10,12 +10,19 @@ let current = null; // { id, data, brain }
 
 function freshSave(name) {
   return {
-    name, version: 1,
-    xp: 0, streak: 0, lastPlayed: null,
+    name, version: 2,
+    xp: 0, streak: 0, bestStreak: 0, lastPlayed: null,
     muted: false, blasterHigh: 0, matchBest: null,
+    blasterVictory: false, matchPerfect: false,
+    loteriaWins: 0, palabrleWins: 0, ahorcadoWins: 0, clasificadorBest: 0,
+    history: {}, knownLog: {}, achieved: {},
     brain: { words: {} },
     created: new Date().toISOString(),
   };
+}
+
+function dateKey(d = new Date()) {
+  return d.toISOString().slice(0, 10);
 }
 
 export function initProfiles() {
@@ -75,10 +82,16 @@ export function levelInfo(xp = current.data.xp) {
 
 export function addXP(n) {
   const before = levelInfo().level;
-  current.data.xp += Math.max(0, Math.round(n));
+  const gained = Math.max(0, Math.round(n));
+  current.data.xp += gained;
+  const day = dateKey();
+  if (!current.data.history) current.data.history = {};
+  if (!current.data.knownLog) current.data.knownLog = {};
+  current.data.history[day] = (current.data.history[day] || 0) + gained;
+  current.data.knownLog[day] = current.brain.stats().known;
   touchStreak();
   saveNow();
-  return { gained: n, leveledUp: levelInfo().level > before };
+  return { gained, leveledUp: levelInfo().level > before };
 }
 
 export function touchStreak() {

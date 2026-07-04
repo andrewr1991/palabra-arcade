@@ -254,6 +254,8 @@ function wrongAnswer() {
 // ── Flow ─────────────────────────────────────────────────────────
 function waveCleared() {
   if (game.wave === 10 && !game.endless) {
+    active().data.blasterVictory = true;
+    saveNow();
     game.state = "victory";
     ui.victoryStats.textContent = `Score ${game.score} · Best combo ${game.bestCombo} · ${game.session.correct} words blasted`;
     ui.victory.classList.remove("hidden");

@@ -40,6 +40,23 @@
     <span>⚠️</span><span id="hub-fading-text"></span>
   </div>
 
+  <h3 class="hub-section">📚 Estudio</h3>
+  <div class="game-grid">
+    <button class="game-card study-card" id="card-nuevas">
+      <span class="game-icon">🌱</span>
+      <span class="game-name">Palabras nuevas</span>
+      <span class="game-desc">Conoce 5 palabras nuevas con ejemplos y un mini-quiz.</span>
+      <span class="game-meta" id="hub-nuevas-meta"></span>
+    </button>
+    <button class="game-card study-card" id="card-repaso">
+      <span class="game-icon">🔁</span>
+      <span class="game-name">Repaso</span>
+      <span class="game-desc">Tarjetas de lo que se te está olvidando. Cinco minutos.</span>
+      <span class="game-meta" id="hub-repaso-meta"></span>
+    </button>
+  </div>
+
+  <h3 class="hub-section">🕹️ Juegos</h3>
   <div class="game-grid">
     <button class="game-card" id="card-blaster">
       <span class="game-icon">🚀</span>
@@ -53,11 +70,45 @@
       <span class="game-desc">Empareja español con inglés. Tranquilo pero traicionero.</span>
       <span class="game-meta" id="hub-match-best"></span>
     </button>
+    <button class="game-card" id="card-loteria">
+      <span class="game-icon">🫘</span>
+      <span class="game-name">Lotería</span>
+      <span class="game-desc">Escucha la palabra, encuentra la imagen. Como con la abuela.</span>
+      <span class="game-meta" id="hub-loteria-meta"></span>
+    </button>
+    <button class="game-card" id="card-palabrle">
+      <span class="game-icon">🟩</span>
+      <span class="game-name">Palabrle</span>
+      <span class="game-desc">Adivina la palabra del día en 6 intentos. Con pista en inglés.</span>
+      <span class="game-meta" id="hub-palabrle-meta"></span>
+    </button>
+    <button class="game-card" id="card-clasificador">
+      <span class="game-icon">🗂️</span>
+      <span class="game-name">Clasificador</span>
+      <span class="game-desc">Palabras que caen — mándalas al bote correcto (teclas 1-2-3).</span>
+      <span class="game-meta" id="hub-clasificador-meta"></span>
+    </button>
+    <button class="game-card" id="card-ahorcado">
+      <span class="game-icon">💀</span>
+      <span class="game-name">Ahorcado</span>
+      <span class="game-desc">El clásico. Adivina las letras antes de que sea tarde.</span>
+      <span class="game-meta" id="hub-ahorcado-meta"></span>
+    </button>
+  </div>
+
+  <h3 class="hub-section">📦 Colección</h3>
+  <div class="game-grid">
     <button class="game-card game-card-codex" id="card-codex">
       <span class="game-icon">📖</span>
       <span class="game-name">Códice</span>
       <span class="game-desc">Tu colección de palabras — cada una con su fuerza actual.</span>
       <span class="game-meta">colecciónalas todas</span>
+    </button>
+    <button class="game-card game-card-codex" id="card-taller">
+      <span class="game-icon">🛠️</span>
+      <span class="game-name">Taller de palabras</span>
+      <span class="game-desc">Agrega tus propias palabras — o las que te enseñe tu esposa.</span>
+      <span class="game-meta" id="hub-taller-meta"></span>
     </button>
   </div>
 </div>
@@ -102,6 +153,20 @@
       <div id="pf-strong" class="pf-wordlist"></div>
     </div>
   </div>
+
+  <div class="pf-cols">
+    <div>
+      <h3 class="pf-h">XP — últimos 14 días</h3>
+      <div id="pf-chart-xp" class="pf-chart"></div>
+    </div>
+    <div>
+      <h3 class="pf-h">Palabras conocidas</h3>
+      <div id="pf-chart-known" class="pf-chart"></div>
+    </div>
+  </div>
+
+  <h3 class="pf-h">Logros</h3>
+  <div id="pf-achievements"></div>
 </div>
 
 <!-- ═══ CODEX ═══ -->
@@ -195,6 +260,203 @@
       <button id="mt-back" class="small-btn">Back to arcade</button>
     </div>
   </div>
+</div>
+
+<!-- ═══ LOTERÍA ═══ -->
+<div id="screen-loteria" class="screen hidden">
+  <header class="sub-header">
+    <button id="lt-quit" class="back-btn">← Salir</button>
+    <h2>Lotería</h2>
+    <span class="muted">tabla: <span id="lt-progress">0 / 16</span> · errores: <span id="lt-mistakes">0</span></span>
+  </header>
+  <div class="lt-caller">
+    <span class="muted">el gritón dice:</span>
+    <span id="lt-called">—</span>
+    <button id="lt-repeat" class="icon-btn" title="Repetir">🔊</button>
+  </div>
+  <div class="game-stage">
+    <div id="lt-grid"></div>
+    <div id="lt-over" class="overlay hidden">
+      <h2>¡LOTERÍA!</h2>
+      <p id="lt-over-stats" class="tagline"></p>
+      <button id="lt-again" class="big-btn">OTRA TABLA</button>
+      <button id="lt-back" class="small-btn">Back to arcade</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PALABRLE ═══ -->
+<div id="screen-palabrle" class="screen hidden">
+  <header class="sub-header">
+    <button id="pl-quit" class="back-btn">← Salir</button>
+    <h2>Palabrle</h2>
+    <span class="muted" id="pl-mode"></span>
+    <span class="pl-modes">
+      <button id="pl-daily" class="small-btn">del día</button>
+      <button id="pl-free" class="small-btn">libre</button>
+    </span>
+  </header>
+  <p id="pl-clue" class="pl-clue"></p>
+  <div class="game-stage">
+    <div id="pl-grid"></div>
+    <div id="pl-keyboard"></div>
+    <div id="pl-over" class="overlay hidden">
+      <h2 id="pl-over-title"></h2>
+      <p id="pl-over-stats" class="tagline"></p>
+      <button id="pl-again" class="big-btn">OTRA PALABRA</button>
+      <button id="pl-back" class="small-btn">Back to arcade</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CLASIFICADOR ═══ -->
+<div id="screen-clasificador" class="screen hidden">
+  <header class="sub-header">
+    <button id="cl-quit" class="back-btn">← Salir</button>
+    <h2>Clasificador</h2>
+    <span class="muted">puntos: <span id="cl-score">0</span> · <span id="cl-lives">❤️❤️❤️</span></span>
+  </header>
+  <div class="game-stage">
+    <div id="cl-area"></div>
+    <div class="cl-bins">
+      <button class="cl-bin"><span class="cl-bin-key"></span><span class="cl-bin-name"></span></button>
+      <button class="cl-bin"><span class="cl-bin-key"></span><span class="cl-bin-name"></span></button>
+      <button class="cl-bin"><span class="cl-bin-key"></span><span class="cl-bin-name"></span></button>
+    </div>
+    <div id="cl-over" class="overlay hidden">
+      <h2>SE ACABÓ</h2>
+      <p id="cl-over-stats" class="tagline"></p>
+      <button id="cl-again" class="big-btn">OTRA RONDA</button>
+      <button id="cl-back" class="small-btn">Back to arcade</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ AHORCADO ═══ -->
+<div id="screen-ahorcado" class="screen hidden">
+  <header class="sub-header">
+    <button id="ah-quit" class="back-btn">← Salir</button>
+    <h2>Ahorcado</h2>
+    <span class="muted" id="ah-wrong">errores: 0 / 6</span>
+  </header>
+  <div class="game-stage ah-stage">
+    <div id="ah-stage" class="ah-face">😀</div>
+    <p id="ah-clue" class="pl-clue"></p>
+    <div id="ah-word"></div>
+    <div id="ah-keyboard"></div>
+    <div id="ah-over" class="overlay hidden">
+      <h2 id="ah-over-title"></h2>
+      <p id="ah-over-stats" class="tagline"></p>
+      <button id="ah-next" class="big-btn">OTRA PALABRA</button>
+      <button id="ah-back" class="small-btn">Back to arcade</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PALABRAS NUEVAS ═══ -->
+<div id="screen-nuevas" class="screen hidden">
+  <header class="sub-header">
+    <button id="nv-quit" class="back-btn">← Salir</button>
+    <h2>Palabras nuevas</h2>
+    <span class="muted" id="nv-progress"></span>
+  </header>
+  <div class="game-stage">
+    <div id="nv-picker" class="nv-picker"></div>
+
+    <div id="nv-card" class="nv-card hidden">
+      <div class="nv-word-row">
+        <span id="nv-es"></span>
+        <button id="nv-speak" class="icon-btn" title="Escuchar">🔊</button>
+      </div>
+      <p id="nv-en" class="nv-en"></p>
+      <div class="nv-ej">
+        <p id="nv-ej-es"></p>
+        <p id="nv-ej-en" class="muted"></p>
+      </div>
+      <button id="nv-next" class="big-btn">SIGUIENTE →</button>
+    </div>
+
+    <div id="nv-quiz" class="nv-card hidden">
+      <p class="muted">quiz <span id="nv-quiz-progress"></span> — ¿qué significa…</p>
+      <div class="nv-word-row"><span id="nv-quiz-word"></span></div>
+      <div id="nv-options"></div>
+    </div>
+
+    <div id="nv-over" class="overlay hidden">
+      <h2>¡SEMBRADAS!</h2>
+      <p id="nv-over-stats" class="tagline"></p>
+      <p class="muted">Ahora los juegos las van a reforzar.</p>
+      <button id="nv-again" class="big-btn">OTRAS 5</button>
+      <button id="nv-back" class="small-btn">Back to arcade</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ REPASO ═══ -->
+<div id="screen-repaso" class="screen hidden">
+  <header class="sub-header">
+    <button id="rp-quit" class="back-btn">← Salir</button>
+    <h2>Repaso</h2>
+    <span class="muted" id="rp-progress"></span>
+  </header>
+  <div class="game-stage">
+    <p id="rp-empty" class="muted hidden" style="text-align:center; padding:60px 0;">
+      Aún no hay nada que repasar — aprende palabras nuevas o juega algo primero.
+    </p>
+    <div id="rp-play" class="nv-card">
+      <div class="nv-word-row">
+        <span id="rp-es"></span>
+        <button id="rp-speak" class="icon-btn" title="Escuchar">🔊</button>
+      </div>
+      <div id="rp-answer-zone">
+        <input id="rp-input" type="text" autocomplete="off" spellcheck="false"
+               placeholder="¿qué significa en inglés?" class="rp-input">
+        <div class="rp-btns">
+          <button id="rp-nose" class="small-btn">no sé 🤷</button>
+        </div>
+      </div>
+      <div id="rp-reveal" class="rp-reveal hidden">
+        <p id="rp-result"></p>
+        <p id="rp-en" class="rp-en"></p>
+        <p id="rp-ej" class="muted"></p>
+        <button id="rp-continue" class="big-btn">SIGUIENTE →</button>
+      </div>
+    </div>
+    <div id="rp-over" class="overlay hidden">
+      <h2>¡REPASADO!</h2>
+      <p id="rp-over-stats" class="tagline"></p>
+      <button id="rp-again" class="big-btn">OTRO REPASO</button>
+      <button id="rp-back" class="small-btn">Back to arcade</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TALLER ═══ -->
+<div id="screen-taller" class="screen hidden">
+  <header class="sub-header">
+    <button id="tw-back" class="back-btn">← Volver</button>
+    <h2>Taller de palabras</h2>
+    <span class="muted" id="tw-count"></span>
+  </header>
+  <div class="tw-form">
+    <div class="tw-row">
+      <input id="tw-es" type="text" placeholder="palabra en español *" autocomplete="off" spellcheck="false">
+      <input id="tw-en" type="text" placeholder="significados en inglés, separados por comas *" autocomplete="off">
+      <select id="tw-cat"></select>
+    </div>
+    <div class="tw-row">
+      <input id="tw-ej-es" type="text" placeholder="frase de ejemplo (opcional)" autocomplete="off" spellcheck="false">
+      <input id="tw-ej-en" type="text" placeholder="traducción de la frase" autocomplete="off">
+      <input id="tw-emo" type="text" placeholder="emoji 🐶" maxlength="4" class="tw-emo">
+      <button id="tw-add" class="big-btn tw-add">AGREGAR</button>
+    </div>
+  </div>
+  <div class="tw-actions">
+    <button id="tw-export" class="small-btn">💾 Exportar paquete</button>
+    <button id="tw-import" class="small-btn">📂 Importar paquete</button>
+    <input id="tw-import-file" type="file" accept=".json" class="hidden">
+  </div>
+  <div id="tw-list"></div>
 </div>
 
 <dialog id="app-dialog">
