@@ -88,6 +88,26 @@ export function touchStreak() {
   const yesterday = new Date(Date.now() - 86400000).toDateString();
   current.data.streak = last === yesterday ? current.data.streak + 1 : 1;
   current.data.lastPlayed = today;
+  if (current.data.streak > (current.data.bestStreak || 0)) {
+    current.data.bestStreak = current.data.streak;
+  }
+}
+
+export function renameProfile(name) {
+  current.data.name = name;
+  const meta = index.list.find((p) => p.id === current.id);
+  if (meta) meta.name = name;
+  saveIndex();
+  saveNow();
+}
+
+export function deleteProfile(id) {
+  if (index.list.length <= 1) return false;
+  index.list = index.list.filter((p) => p.id !== id);
+  localStorage.removeItem(SAVE_PREFIX + id);
+  saveIndex();
+  if (current.id === id) loadProfile(index.list[0].id);
+  return true;
 }
 
 // ── Save file export / import ────────────────────────────────────

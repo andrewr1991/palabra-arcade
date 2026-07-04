@@ -6,12 +6,13 @@ import { initBlaster, enterBlaster } from "./games/blaster.js";
 import { initMatch, enterMatch } from "./games/match.js";
 
 const $ = (id) => document.getElementById(id);
-const SCREENS = ["hub", "codex", "blaster", "match"];
+const SCREENS = ["hub", "codex", "blaster", "match", "perfil"];
 
 function showScreen(name) {
   for (const s of SCREENS) $("screen-" + s).classList.toggle("hidden", s !== name);
   if (name === "hub") renderHub();
   if (name === "codex") renderCodex();
+  if (name === "perfil") renderPerfil();
 }
 
 // ── Hub ──────────────────────────────────────────────────────────
@@ -75,6 +76,94 @@ function renderProfileSelect() {
   sel.appendChild(newOpt);
 }
 
+// ── Perfil ───────────────────────────────────────────────────────
+function renderPerfil() {
+  const p = profile.active();
+  const d = p.data;
+  const { level, into, need } = profile.levelInfo();
+
+  $("pf-avatar").textContent = d.name.slice(0, 2).toUpperCase();
+  $("pf-name").textContent = d.name;
+  $("pf-level").textContent = `Nivel ${level}`;
+  $("pf-xpbar").style.width = Math.round((into / need) * 100) + "%";
+  $("pf-xptext").textContent = `${into} / ${need} XP para el nivel ${level + 1} · ${d.xp} XP en total`;
+  $("pf-created").textContent = d.created
+    ? "miembro desde " + new Date(d.created).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })
+    : "";
+
+  // global answer stats derived from the brain — no separate bookkeeping
+  let ok = 0, bad = 0;
+  for (const rec of Object.values(p.brain.state.words)) { ok += rec.ok; bad += rec.bad; }
+  const s = p.brain.stats();
+  const acc = ok + bad ? Math.round((ok / (ok + bad)) * 100) + "%" : "—";
+
+  const metrics = [
+    ["palabras conocidas", `${s.known} / ${s.total}`],
+    ["dominadas", s.mastered, "gold"],
+    ["fuertes", s.strong, "green"],
+    ["olvidándose", s.fading, s.fading ? "red" : ""],
+    ["precisión global", acc],
+    ["respuestas totales", ok + bad],
+    ["racha actual", `🔥 ${d.streak || 0} día${d.streak === 1 ? "" : "s"}`],
+    ["mejor racha", `🔥 ${d.bestStreak || d.streak || 0}`],
+    ["high score — blaster", d.blasterHigh || "—"],
+    ["mejor memoria", d.matchBest ? `${d.matchBest.moves} mov.` : "—"],
+  ];
+  $("pf-metrics").innerHTML = "";
+  for (const [label, value, tone] of metrics) {
+    const card = document.createElement("div");
+    card.className = "pf-card" + (tone ? " pf-" + tone : "");
+    card.innerHTML = `<span class="pf-label"></span><span class="pf-value"></span>`;
+    card.querySelector(".pf-label").textContent = label;
+    card.querySelector(".pf-value").textContent = value;
+    $("pf-metrics").appendChild(card);
+  }
+
+  // per-category progress
+  const cats = $("pf-cats");
+  cats.innerHTML = "";
+  for (const [key, label] of Object.entries(CATEGORIES)) {
+    const words = WORDS.filter((w) => w.cat === key);
+    const known = words.filter((w) => p.brain.statusOf(w.es) !== "new").length;
+    const mastered = words.filter((w) => p.brain.statusOf(w.es) === "mastered").length;
+    const pct = Math.round((known / words.length) * 100);
+    const row = document.createElement("div");
+    row.className = "pf-cat-row";
+    row.innerHTML = `
+      <span class="pf-cat-name"></span>
+      <div class="pf-cat-track"><div class="pf-cat-fill"></div></div>
+      <span class="pf-cat-count"></span>`;
+    row.querySelector(".pf-cat-name").textContent = label;
+    row.querySelector(".pf-cat-fill").style.width = pct + "%";
+    row.querySelector(".pf-cat-fill").classList.toggle("full-gold", mastered === words.length && words.length > 0);
+    row.querySelector(".pf-cat-count").textContent = `${known}/${words.length}`;
+    cats.appendChild(row);
+  }
+
+  // weakest / strongest seen words
+  const seen = WORDS.filter((w) => p.brain.info(w.es));
+  const byStrength = [...seen].sort((a, b) => p.brain.strengthOf(a.es) - p.brain.strengthOf(b.es));
+  fillWordList($("pf-weak"), byStrength.slice(0, 5), p, "weak");
+  fillWordList($("pf-strong"), byStrength.slice(-5).reverse(), p, "strong");
+}
+
+function fillWordList(el, words, p, tone) {
+  el.innerHTML = "";
+  if (!words.length) {
+    el.innerHTML = `<span class="muted">juega algo primero</span>`;
+    return;
+  }
+  for (const w of words) {
+    const row = document.createElement("div");
+    row.className = "pf-word " + tone;
+    row.innerHTML = `<b></b><span></span><em></em>`;
+    row.querySelector("b").textContent = w.es;
+    row.querySelector("span").textContent = w.en[0];
+    row.querySelector("em").textContent = p.brain.strengthOf(w.es) + "%";
+    el.appendChild(row);
+  }
+}
+
 // ── Codex ────────────────────────────────────────────────────────
 const STATUS_LABEL = {
   new: "nueva", learning: "aprendiendo", strong: "fuerte",
@@ -129,6 +218,25 @@ function renderCodexGrid() {
 profile.initProfiles();
 initBlaster({ onExit: () => showScreen("hub") });
 initMatch({ onExit: () => showScreen("hub") });
+
+$("hub-profile-link").addEventListener("click", () => showScreen("perfil"));
+$("pf-back").addEventListener("click", () => showScreen("hub"));
+$("pf-export").addEventListener("click", profile.exportSave);
+$("pf-rename").addEventListener("click", async () => {
+  const name = await askDialog("Nuevo nombre del perfil:", { input: true });
+  if (name) { profile.renameProfile(name); renderPerfil(); }
+});
+$("pf-delete").addEventListener("click", async () => {
+  if (profile.listProfiles().length <= 1) {
+    askDialog("No puedes eliminar el único perfil.");
+    return;
+  }
+  const sure = await askDialog(`¿Eliminar el perfil "${profile.active().data.name}"? Esta acción no se puede deshacer.`);
+  if (sure) {
+    profile.deleteProfile(profile.active().id);
+    showScreen("hub");
+  }
+});
 
 $("card-blaster").addEventListener("click", () => { showScreen("blaster"); enterBlaster(); });
 $("card-match").addEventListener("click", () => { showScreen("match"); enterMatch(); });

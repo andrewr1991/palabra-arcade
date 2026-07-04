@@ -11,16 +11,18 @@
 <!-- ═══ HUB ═══ -->
 <div id="screen-hub" class="screen">
   <header id="hub-header">
-    <div id="hub-avatar"></div>
-    <div class="hub-id">
-      <div class="hub-name-row">
-        <span id="hub-name"></span>
-        <span id="hub-level" class="level-badge"></span>
-        <span id="hub-streak" class="streak"></span>
+    <button id="hub-profile-link" title="Ver perfil">
+      <div id="hub-avatar"></div>
+      <div class="hub-id">
+        <div class="hub-name-row">
+          <span id="hub-name"></span>
+          <span id="hub-level" class="level-badge"></span>
+          <span id="hub-streak" class="streak"></span>
+        </div>
+        <div class="xp-track"><div id="hub-xpbar"></div></div>
+        <span id="hub-xptext" class="xp-text"></span>
       </div>
-      <div class="xp-track"><div id="hub-xpbar"></div></div>
-      <span id="hub-xptext" class="xp-text"></span>
-    </div>
+    </button>
     <div class="hub-actions">
       <select id="profile-select" title="Perfil"></select>
       <button id="btn-export" class="icon-btn" title="Exportar partida guardada">💾</button>
@@ -57,6 +59,48 @@
       <span class="game-desc">Tu colección de palabras — cada una con su fuerza actual.</span>
       <span class="game-meta">colecciónalas todas</span>
     </button>
+  </div>
+</div>
+
+<!-- ═══ PERFIL ═══ -->
+<div id="screen-perfil" class="screen hidden">
+  <header class="sub-header">
+    <button id="pf-back" class="back-btn">← Volver</button>
+    <h2>Perfil</h2>
+    <span id="pf-created" class="muted"></span>
+  </header>
+
+  <div class="pf-top">
+    <div id="pf-avatar"></div>
+    <div class="pf-identity">
+      <div class="hub-name-row">
+        <span id="pf-name"></span>
+        <span id="pf-level" class="level-badge"></span>
+      </div>
+      <div class="xp-track"><div id="pf-xpbar"></div></div>
+      <span id="pf-xptext" class="xp-text"></span>
+    </div>
+    <div class="pf-top-actions">
+      <button id="pf-rename" class="small-btn">✏️ Renombrar</button>
+      <button id="pf-export" class="small-btn">💾 Exportar</button>
+      <button id="pf-delete" class="small-btn danger">🗑 Eliminar</button>
+    </div>
+  </div>
+
+  <div id="pf-metrics" class="pf-grid"></div>
+
+  <h3 class="pf-h">Progreso por categoría</h3>
+  <div id="pf-cats"></div>
+
+  <div class="pf-cols">
+    <div>
+      <h3 class="pf-h">Palabras más débiles</h3>
+      <div id="pf-weak" class="pf-wordlist"></div>
+    </div>
+    <div>
+      <h3 class="pf-h">Palabras más fuertes</h3>
+      <div id="pf-strong" class="pf-wordlist"></div>
+    </div>
   </div>
 </div>
 
