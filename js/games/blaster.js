@@ -5,10 +5,42 @@ import { BOSS_VERBS, BOSS_PERSONS, BOSS_TENSES } from "../data/words.js";
 import { norm, answerSetFor, inputMatches } from "../brain.js";
 import { active, addXP, saveNow } from "../profile.js";
 import { getSettings } from "../settings.js";
-import { hasSprite, drawSprite } from "../sprites.js";
 
 const W = 900, H = 640;
 let canvas, ctx, deps, bound = false;
+
+// ── Sprites (sliced from the art-direction sheet) ────────────────
+const art = {};                 // name -> HTMLImageEl once loaded
+const SHIP_KEY = "ship-blue";
+const ENEMY_ART = {
+  normal:  ["enemy-green", "enemy-lime"],
+  reverse: ["enemy-cyan", "enemy-blue"],
+  armored: ["enemy-redoct", "enemy-red"],
+};
+const BOSS_ART = ["boss-fortress", "boss-octopus", "boss-skull"];
+function loadArt() {
+  if (loadArt.done) return;
+  loadArt.done = true;
+  const names = ["ship-blue", "ship-red", "ship-orange", "ship-green",
+    "enemy-green", "enemy-lime", "enemy-cyan", "enemy-blue", "enemy-redoct", "enemy-red",
+    ...BOSS_ART];
+  for (const n of names) {
+    const img = new Image();
+    img.onload = () => { art[n] = img; };
+    img.src = `assets/blaster/${n}.png`;
+  }
+}
+// draw a loaded sprite centered on (x,y) at a target height; false if not ready
+function drawArt(name, x, y, targetH) {
+  const img = art[name];
+  if (!img || !img.naturalWidth) return false;
+  const s = targetH / img.naturalHeight;
+  const w = img.naturalWidth * s;
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(img, x - w / 2, y - targetH / 2, w, targetH);
+  return true;
+}
+function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
 
 const $ = (id) => document.getElementById(id);
 let ui = null;
@@ -113,8 +145,10 @@ function spawnEnemy(entry) {
   ctx.font = "700 17px 'Segoe UI', sans-serif";
   const w = Math.max(74, ctx.measureText(display).width + 40);
   const speed = (16 + game.wave * 3.5) * (0.85 + Math.random() * 0.3) * (entry.armored ? 1.3 : 1);
+  const kind = entry.armored ? "armored" : entry.reverse ? "reverse" : "normal";
   const enemy = {
-    ...entry, display, w,
+    ...entry, display, w, kind,
+    art: pick(ENEMY_ART[kind]),
     x: 40 + w / 2 + Math.random() * (W - 80 - w),
     y: -20, speed,
     wobble: Math.random() * Math.PI * 2,
@@ -129,6 +163,7 @@ function startBoss(n) {
   game.boss = {
     hp: 6 + (n / 5) * 2, maxHp: 6 + (n / 5) * 2,
     x: W / 2, y: 120, t: 0,
+    art: BOSS_ART[(Math.floor(n / 5) - 1) % BOSS_ART.length],
     promptTime: Math.max(6, 13 - n * 0.3),
     verb: null, tense: null, personIdx: 0, timeLeft: 0,
   };
@@ -438,30 +473,32 @@ function render() {
   }
   ctx.lineWidth = 1;
 
-  ctx.font = "700 17px 'Segoe UI', sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   for (const e of game.enemies) {
-    const x = e.x - e.w / 2, y = e.y - 15;
-    let fill, glow;
-    if (e.armored) { fill = "#c93a3a"; glow = "rgba(255,93,93,0.5)"; }
-    else if (e.reverse) { fill = "#1d7fa8"; glow = "rgba(79,214,255,0.45)"; }
-    else { fill = "#1d8f5c"; glow = "rgba(53,224,143,0.4)"; }
-    ctx.shadowColor = glow;
-    ctx.shadowBlur = 14;
-    ctx.fillStyle = fill;
-    roundRect(x, y, e.w, 30, 15);
-    ctx.fill();
+    const edge = e.armored ? "#e04f4f" : e.reverse ? "#4fa4e8" : "#6abe30";
+    const glow = e.armored ? "rgba(224,79,79,0.5)"
+      : e.reverse ? "rgba(79,164,232,0.45)" : "rgba(106,190,48,0.45)";
+    // creature sprite above the word tag
+    ctx.shadowColor = glow; ctx.shadowBlur = 12;
+    const drew = drawArt(e.art, e.x, e.y - 26, 44);
     ctx.shadowBlur = 0;
-    ctx.fillStyle = fill;
-    ctx.beginPath();
-    ctx.moveTo(e.x - 6, e.y + 15);
-    ctx.lineTo(e.x + 6, e.y + 15);
-    ctx.lineTo(e.x, e.y + 23);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = "#fff";
-    ctx.fillText((e.armored ? "🛡 " : "") + e.display, e.x, e.y + 1);
+    // word tag (cream, category-colored border) — legibility first
+    ctx.font = "700 17px 'Segoe UI', sans-serif";
+    const label = (e.armored ? "🛡 " : "") + e.display;
+    const pw = Math.max(58, ctx.measureText(label).width + 24);
+    if (!drew) {                         // fallback while art loads
+      ctx.fillStyle = edge; ctx.shadowColor = glow; ctx.shadowBlur = 14;
+      roundRect(e.x - pw / 2, e.y - 15, pw, 30, 15); ctx.fill(); ctx.shadowBlur = 0;
+      ctx.fillStyle = "#fff"; ctx.fillText(label, e.x, e.y + 1);
+      continue;
+    }
+    ctx.fillStyle = "#f5eeda";
+    ctx.strokeStyle = edge; ctx.lineWidth = 2;
+    roundRect(e.x - pw / 2, e.y - 2, pw, 26, 8); ctx.fill(); ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.fillStyle = "#2a1c10";
+    ctx.fillText(label, e.x, e.y + 11);
   }
 
   if (game.state === "boss" && game.boss) drawBoss();
@@ -487,7 +524,11 @@ function render() {
 
 function drawShip() {
   const { x, y } = ship;
-  if (hasSprite("ship")) { drawSprite(ctx, "ship", x, y - 6, 2); return; }
+  ctx.shadowColor = "rgba(79,164,232,0.6)";
+  ctx.shadowBlur = 16;
+  const drew = drawArt(SHIP_KEY, x, y - 4, 50);
+  ctx.shadowBlur = 0;
+  if (drew) return;
   ctx.shadowColor = "rgba(53,224,143,0.7)";
   ctx.shadowBlur = 18;
   ctx.fillStyle = "#35e08f";
@@ -511,22 +552,27 @@ function drawBoss() {
   const b = game.boss;
   ctx.shadowColor = "rgba(255,209,102,0.6)";
   ctx.shadowBlur = 24;
-  ctx.fillStyle = "#8659c9";
-  ctx.beginPath();
-  ctx.ellipse(b.x, b.y, 90, 30, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#b18cff";
-  ctx.beginPath();
-  ctx.ellipse(b.x, b.y - 18, 42, 26, 0, Math.PI, 0);
-  ctx.fill();
+  const drew = drawArt(b.art, b.x, b.y, 132);
   ctx.shadowBlur = 0;
+  if (!drew) {
+    ctx.shadowColor = "rgba(255,209,102,0.6)"; ctx.shadowBlur = 24;
+    ctx.fillStyle = "#8659c9";
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y, 90, 30, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#b18cff";
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y - 18, 42, 26, 0, Math.PI, 0);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
 
-  const bw = 200;
+  const bw = 200, hbY = b.y - 86;
   ctx.fillStyle = "#1e2a45";
-  roundRect(b.x - bw / 2, b.y - 64, bw, 12, 6); ctx.fill();
+  roundRect(b.x - bw / 2, hbY, bw, 12, 6); ctx.fill();
   ctx.fillStyle = "#ff5d5d";
   const frac = Math.max(0, b.hp / b.maxHp);
-  if (frac > 0) { roundRect(b.x - bw / 2, b.y - 64, bw * frac, 12, 6); ctx.fill(); }
+  if (frac > 0) { roundRect(b.x - bw / 2, hbY, bw * frac, 12, 6); ctx.fill(); }
 
   ctx.textAlign = "center";
   ctx.fillStyle = "#ffd166";
@@ -546,6 +592,7 @@ function drawBoss() {
 // ── Public API ───────────────────────────────────────────────────
 export function initBlaster(dependencies) {
   deps = dependencies;
+  loadArt();
   canvas = $("bl-canvas");
   ctx = canvas.getContext("2d");
   const dpr = window.devicePixelRatio || 1;
