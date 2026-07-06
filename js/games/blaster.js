@@ -13,9 +13,20 @@ let canvas, ctx, deps, bound = false;
 const art = {};                 // name -> HTMLImageEl once loaded
 const SHIP_KEY = "ship-blue";
 const ENEMY_ART = {
-  normal:  ["enemy-green", "enemy-lime"],
-  reverse: ["enemy-cyan", "enemy-blue"],
-  armored: ["enemy-redoct", "enemy-red"],
+  normal:   ["enemy-green", "enemy-lime"],
+  learning: ["enemy-orange", "enemy-pink"],
+  reverse:  ["enemy-cyan", "enemy-blue"],
+  armored:  ["enemy-redoct", "enemy-red"],
+  bonus:    ["enemy-purple"],
+};
+const KIND_COLOR = {
+  normal: "#6abe30", learning: "#e8722a", reverse: "#4fa4e8",
+  armored: "#e04f4f", bonus: "#f7b32b",
+};
+const KIND_GLOW = {
+  normal: "rgba(106,190,48,0.45)", learning: "rgba(232,114,42,0.5)",
+  reverse: "rgba(79,164,232,0.45)", armored: "rgba(224,79,79,0.5)",
+  bonus: "rgba(247,179,43,0.65)",
 };
 const BOSS_ART = ["boss-fortress", "boss-octopus", "boss-skull"];
 function loadArt() {
@@ -66,6 +77,8 @@ const sfx = {
   wrong() { tone(160, 0.18, "sawtooth", 0.07); },
   hurt() { tone(120, 0.3, "sawtooth", 0.12); tone(90, 0.35, "sawtooth", 0.1, 0.1); },
   wave() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.14, "triangle", 0.08, i * 0.09)); },
+  combo(c) { tone(440 + Math.min(c, 30) * 28, 0.07, "square", 0.045); },
+  life() { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.12, "triangle", 0.09, i * 0.07)); },
   bossHit() { tone(220, 0.1, "square", 0.1); tone(440, 0.12, "square", 0.08, 0.05); },
   bossDie() { [784, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.16, "triangle", 0.09, i * 0.1)); },
   gameOver() { [392, 330, 262, 196].forEach((f, i) => tone(f, 0.3, "triangle", 0.09, i * 0.22)); },
@@ -88,7 +101,7 @@ const game = {
 window.__blaster = game; // debug/test handle
 
 const ship = { x: W / 2, y: H - 46 };
-const lasers = [], particles = [], popups = [];
+const lasers = [], particles = [], popups = [], rings = [];
 const stars = Array.from({ length: 90 }, () => ({
   x: Math.random() * W, y: Math.random() * H,
   r: Math.random() * 1.4 + 0.3, v: Math.random() * 12 + 4,
@@ -97,13 +110,28 @@ const stars = Array.from({ length: 90 }, () => ({
 function multiplier() { return 1 + Math.min(4, Math.floor(game.combo / 5)) * 0.5; }
 
 // ── Brain integration ────────────────────────────────────────────
-function isWeak(es) {
+// A word's difficulty TIER this run: 2 = tough (armored), 1 = learning,
+// 0 = easy. It starts from how weak the word is, then DROPS by how many
+// times you've already blasted it this session — so words visibly
+// downgrade as you master them, worth less each time.
+function baseDifficulty(es) {
   const brain = active().brain;
-  if (game.sessionWrong.has(es)) return true;
+  if (game.sessionWrong.has(es)) return 2;
   const rec = brain.info(es);
-  return brain.statusOf(es) === "fading" || (rec && rec.bad > rec.ok);
+  const status = brain.statusOf(es);
+  if (status === "fading" || (rec && rec.bad > rec.ok)) return 2;
+  if (status === "new" || status === "learning" || (rec && rec.ok < 3)) return 1;
+  return 0;
 }
-function recordHit(es) { active().brain.report(es, { correct: true, weight: 1 }); saveNow(); }
+function wordTier(es) {
+  const t = baseDifficulty(es) - (game.sessionHits[es] || 0);
+  return Math.max(0, Math.min(2, t));
+}
+function recordHit(es) {
+  game.sessionHits[es] = (game.sessionHits[es] || 0) + 1;
+  active().brain.report(es, { correct: true, weight: 1 });
+  saveNow();
+}
 function recordMiss(es) {
   active().brain.report(es, { correct: false, weight: 1 });
   game.sessionWrong.add(es);
@@ -113,7 +141,7 @@ function recordMiss(es) {
 // ── Waves ────────────────────────────────────────────────────────
 function pickWaveWords(count) {
   const words = active().brain.requestWords(count, { newCount: Math.ceil(count * 0.15) });
-  return words.map((w) => ({ word: w, armored: isWeak(w.es) }));
+  return words.map((w) => ({ word: w }));
 }
 
 function startWave(n) {
@@ -128,6 +156,12 @@ function startWave(n) {
   game.queue = pickWaveWords(count).map((p) => ({
     ...p, reverse: Math.random() < reverseChance,
   }));
+  // rare golden life-word: only when you've lost a heart, and fast/hard to catch
+  if (game.lives < 5 && Math.random() < 0.4 && game.queue.length) {
+    const src = game.queue[Math.floor(Math.random() * game.queue.length)];
+    const at = 2 + Math.floor(Math.random() * (game.queue.length - 2));
+    game.queue.splice(at, 0, { word: src.word, reverse: false, bonus: true });
+  }
   game.spawnInterval = Math.max(0.9, 3.1 - n * 0.2);
   game.spawnTimer = 1.2;
   showBanner(`WAVE ${n} — ${BANNERS[(n - 1) % BANNERS.length]}`);
@@ -144,10 +178,20 @@ function spawnEnemy(entry) {
   const display = entry.reverse ? entry.word.en[0] : entry.word.es;
   ctx.font = "700 17px 'Segoe UI', sans-serif";
   const w = Math.max(74, ctx.measureText(display).width + 40);
-  const speed = (16 + game.wave * 3.5) * (0.85 + Math.random() * 0.3) * (entry.armored ? 1.3 : 1);
-  const kind = entry.armored ? "armored" : entry.reverse ? "reverse" : "normal";
+
+  // tier drives kind, speed, points and armor (unless it's the bonus heart)
+  const tier = wordTier(entry.word.es);
+  const armored = !entry.bonus && tier === 2;
+  const kind = entry.bonus ? "bonus"
+    : entry.reverse ? "reverse"
+    : tier === 2 ? "armored"
+    : tier === 1 ? "learning" : "normal";
+  const points = entry.bonus ? 15 : ([10, 18, 30][tier] + (entry.reverse ? 6 : 0));
+  const tierSpeed = entry.bonus ? 1.7 : [1, 1.12, 1.3][tier];
+  const speed = (16 + game.wave * 3.5) * (0.85 + Math.random() * 0.3) * tierSpeed;
+
   const enemy = {
-    ...entry, display, w, kind,
+    ...entry, display, w, kind, tier, armored, points,
     art: pick(ENEMY_ART[kind]),
     x: 40 + w / 2 + Math.random() * (W - 80 - w),
     y: -20, speed,
@@ -185,18 +229,23 @@ function bossAnswer() {
 }
 
 // ── Scoring / lives ──────────────────────────────────────────────
+// score per kill = base × tier-multiplier + a flat combo bonus that
+// grows with your streak (every chained kill is worth +1 more, capped).
 function addScore(base, x, y, color) {
-  const pts = Math.round(base * multiplier());
+  const bonus = Math.min(game.combo, 25);
+  const pts = Math.round(base * multiplier()) + bonus;
   game.score += pts;
   ui.score.textContent = game.score;
-  popups.push({ x, y, text: `+${pts}`, t: 1, color });
+  const txt = bonus > 0 ? `+${pts} (+${bonus})` : `+${pts}`;
+  popups.push({ x, y, text: txt, t: 1, color });
   game.combo++;
   game.bestCombo = Math.max(game.bestCombo, game.combo);
+  if (game.combo >= 3) sfx.combo(game.combo);
   updateCombo();
 }
 function updateCombo() {
-  if (game.combo >= 5) {
-    ui.combo.textContent = `COMBO x${multiplier()}`;
+  if (game.combo >= 3) {
+    ui.combo.textContent = `COMBO ×${multiplier()}  +${Math.min(game.combo, 25)}`;
     ui.combo.classList.remove("hidden");
   } else ui.combo.classList.add("hidden");
 }
@@ -212,21 +261,38 @@ function loseLife() {
   if (game.lives <= 0) endGame(false);
 }
 function gainLife() {
-  if (game.lives < 5) {
-    game.lives++;
-    ui.lives.textContent = "❤️".repeat(game.lives);
-    popups.push({ x: ship.x, y: ship.y - 40, text: "+1 ❤️", t: 1.2, color: "#ff8fa3" });
-  }
+  if (game.lives >= 5) return false;
+  game.lives++;
+  ui.lives.textContent = "❤️".repeat(game.lives);
+  popups.push({ x: ship.x, y: ship.y - 40, text: "+1 ❤️", t: 1.2, color: "#ff8fa3" });
+  return true;
 }
 
 // ── Effects ──────────────────────────────────────────────────────
-function explode(x, y, color, n = 16) {
+// styles: 0 burst · 1 ring+spray · 2 starburst spokes · 3 confetti pop · 4 implode
+function explode(x, y, color, n = 16, style = Math.floor(Math.random() * 4)) {
+  const CONFETTI = ["#6abe30", "#4fa4e8", "#f7b32b", "#e04f4f", "#9b6de0", "#e8722a"];
+  if (style === 1 || style === 2) rings.push({ x, y, r: 4, max: 46, life: 0.45, color });
   for (let i = 0; i < n; i++) {
-    const a = Math.random() * Math.PI * 2, sp = 40 + Math.random() * 160;
-    particles.push({
-      x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-      life: 0.5 + Math.random() * 0.4, color, size: 1.5 + Math.random() * 2.5,
-    });
+    let a, sp, life, size, c = color, vx, vy;
+    if (style === 2) {                       // starburst: 8 sharp spokes
+      a = (Math.PI * 2 * (i % 8)) / 8 + (Math.random() - 0.5) * 0.15;
+      sp = 150 + Math.random() * 90; life = 0.4 + Math.random() * 0.25; size = 2 + Math.random() * 2;
+    } else if (style === 3) {                 // confetti pop: colorful, floaty
+      a = Math.random() * Math.PI * 2; sp = 60 + Math.random() * 130;
+      life = 0.7 + Math.random() * 0.5; size = 2 + Math.random() * 3; c = CONFETTI[i % CONFETTI.length];
+    } else if (style === 4) {                 // implode: particles rush inward then out
+      a = Math.random() * Math.PI * 2; const r = 34 + Math.random() * 16;
+      particles.push({ x: x + Math.cos(a) * r, y: y + Math.sin(a) * r,
+        vx: -Math.cos(a) * 150, vy: -Math.sin(a) * 150,
+        life: 0.4 + Math.random() * 0.3, color: c, size: 1.5 + Math.random() * 2, grav: 0 });
+      continue;
+    } else {                                  // burst (default)
+      a = Math.random() * Math.PI * 2; sp = 40 + Math.random() * 160;
+      life = 0.5 + Math.random() * 0.4; size = 1.5 + Math.random() * 2.5;
+    }
+    vx = Math.cos(a) * sp; vy = Math.sin(a) * sp;
+    particles.push({ x, y, vx, vy, life, color: c, size, grav: style === 3 ? 1 : 1 });
   }
 }
 function fireLaser(tx, ty) {
@@ -248,12 +314,26 @@ function submitAnswer() {
   if (target) {
     game.enemies.splice(game.enemies.indexOf(target), 1);
     fireLaser(target.x, target.y);
-    explode(target.x, target.y, target.armored ? "#ff5d5d" : target.reverse ? "#4fd6ff" : "#35e08f");
-    const base = target.armored ? 30 : target.reverse ? 20 : 10;
-    addScore(base, target.x, target.y, "#ffd166");
+    explode(target.x, target.y, KIND_COLOR[target.kind]);
+    sfx.shoot(); sfx.kill();
+
+    if (target.bonus) {                       // golden heart word → life back
+      if (gainLife()) { explode(target.x, target.y, "#f7b32b", 30, 3); sfx.life(); }
+      addScore(target.points, target.x, target.y, "#f7b32b");
+      recordHit(target.word.es);
+      game.session.correct++;
+      return;
+    }
+
+    const tierBefore = target.tier;
+    addScore(target.points, target.x, target.y, "#ffd166");
     recordHit(target.word.es);
     game.session.correct++;
-    sfx.shoot(); sfx.kill();
+    // learning feedback: a tough word you're now mastering downgrades
+    if (tierBefore >= 1 && wordTier(target.word.es) < tierBefore) {
+      popups.push({ x: target.x, y: target.y - 18, text: "¡la dominas! ↓",
+        t: 1.6, color: "#6abe30" });
+    }
   } else {
     wrongAnswer();
   }
@@ -341,7 +421,8 @@ function newGame() {
   game.xpAwarded = false;
   game.session = { correct: 0, wrong: 0, landed: 0, missed: new Map() };
   game.sessionWrong = new Set();
-  particles.length = 0; popups.length = 0; lasers.length = 0;
+  game.sessionHits = {};
+  particles.length = 0; popups.length = 0; lasers.length = 0; rings.length = 0;
   ui.score.textContent = "0";
   ui.lives.textContent = "❤️❤️❤️";
   updateCombo();
@@ -377,11 +458,13 @@ function frame(now) {
 
 function update(dt) {
   for (const s of stars) { s.y += s.v * dt; if (s.y > H) { s.y = -2; s.x = Math.random() * W; } }
-  for (const p of particles) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 120 * dt; p.life -= dt; }
+  for (const p of particles) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 120 * (p.grav ?? 1) * dt; p.life -= dt; }
   for (let i = particles.length - 1; i >= 0; i--) if (particles[i].life <= 0) particles.splice(i, 1);
+  for (const r of rings) { r.r += (r.max - r.r) * Math.min(1, dt * 9); r.life -= dt; }
+  for (let i = rings.length - 1; i >= 0; i--) if (rings[i].life <= 0) rings.splice(i, 1);
   for (const l of lasers) l.t -= dt;
   for (let i = lasers.length - 1; i >= 0; i--) if (lasers[i].t <= 0) lasers.splice(i, 1);
-  for (const p of popups) { p.y -= 30 * dt; p.t -= dt; }
+  for (const p of popups) { p.y -= (p.learn ? 12 : 30) * dt; p.t -= dt; }
   for (let i = popups.length - 1; i >= 0; i--) if (popups[i].t <= 0) popups.splice(i, 1);
   if (game.shake > 0) game.shake -= dt;
 
@@ -405,11 +488,19 @@ function update(dt) {
       e.x += Math.sin(e.wobble) * 12 * dt;
       if (e.y > ship.y - 34) {
         game.enemies.splice(i, 1);
-        recordMiss(e.word.es);
-        game.session.landed++;
-        game.session.missed.set(e.word.es, e.word);
-        loseLife();
-        if (game.state !== "playing") return;
+        if (!e.bonus) {
+          recordMiss(e.word.es);
+          game.session.landed++;
+          game.session.missed.set(e.word.es, e.word);
+          // teach the missed word right now: float it up for a few seconds
+          popups.push({
+            x: Math.max(120, Math.min(W - 120, e.x)), y: e.y - 20,
+            text: `${e.word.es} = ${e.word.en[0]}`,
+            t: 3.6, color: "#f7b32b", learn: true,
+          });
+          loseLife();
+          if (game.state !== "playing") return;
+        }
       }
     }
     if (!game.queue.length && !game.enemies.length && game.bannerTimer <= 0) waveCleared();
@@ -476,16 +567,17 @@ function render() {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   for (const e of game.enemies) {
-    const edge = e.armored ? "#e04f4f" : e.reverse ? "#4fa4e8" : "#6abe30";
-    const glow = e.armored ? "rgba(224,79,79,0.5)"
-      : e.reverse ? "rgba(79,164,232,0.45)" : "rgba(106,190,48,0.45)";
-    // creature sprite above the word tag
-    ctx.shadowColor = glow; ctx.shadowBlur = 12;
-    const drew = drawArt(e.art, e.x, e.y - 26, 44);
+    const edge = KIND_COLOR[e.kind] || "#6abe30";
+    const glow = KIND_GLOW[e.kind] || "rgba(106,190,48,0.45)";
+    // creature sprite above the word tag (bonus hearts pulse)
+    const pulse = e.bonus ? 44 + Math.sin(e.wobble * 3) * 5 : 44;
+    ctx.shadowColor = glow; ctx.shadowBlur = e.bonus ? 20 : 12;
+    const drew = drawArt(e.art, e.x, e.y - 26, pulse);
     ctx.shadowBlur = 0;
     // word tag (cream, category-colored border) — legibility first
     ctx.font = "700 17px 'Segoe UI', sans-serif";
-    const label = (e.armored ? "🛡 " : "") + e.display;
+    const tag = e.armored ? "🛡 " : e.bonus ? "❤️ " : "";
+    const label = tag + e.display;
     const pw = Math.max(58, ctx.measureText(label).width + 24);
     if (!drew) {                         // fallback while art loads
       ctx.fillStyle = edge; ctx.shadowColor = glow; ctx.shadowBlur = 14;
@@ -503,6 +595,17 @@ function render() {
 
   if (game.state === "boss" && game.boss) drawBoss();
 
+  for (const r of rings) {
+    ctx.globalAlpha = Math.max(0, r.life / 0.45) * 0.7;
+    ctx.strokeStyle = r.color;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.lineWidth = 1;
+  ctx.globalAlpha = 1;
+
   for (const p of particles) {
     ctx.globalAlpha = Math.max(0, p.life * 2);
     ctx.fillStyle = p.color;
@@ -510,11 +613,22 @@ function render() {
   }
   ctx.globalAlpha = 1;
 
-  ctx.font = "800 18px 'Segoe UI', sans-serif";
   for (const p of popups) {
     ctx.globalAlpha = Math.max(0, Math.min(1, p.t));
-    ctx.fillStyle = p.color;
-    ctx.fillText(p.text, p.x, p.y);
+    if (p.learn) {                            // missed-word teaching card
+      ctx.font = "700 18px 'Segoe UI', sans-serif";
+      const pw = ctx.measureText(p.text).width + 26;
+      ctx.fillStyle = "rgba(20,16,10,0.85)";
+      ctx.strokeStyle = p.color; ctx.lineWidth = 2;
+      roundRect(p.x - pw / 2, p.y - 16, pw, 30, 8); ctx.fill(); ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.fillStyle = "#f5eeda";
+      ctx.fillText(p.text, p.x, p.y);
+    } else {
+      ctx.font = "800 18px 'Segoe UI', sans-serif";
+      ctx.fillStyle = p.color;
+      ctx.fillText(p.text, p.x, p.y);
+    }
   }
   ctx.globalAlpha = 1;
 
