@@ -90,6 +90,7 @@ const sfx = {
 };
 
 // ── State ────────────────────────────────────────────────────────
+const MAX_LIVES = 5;
 const BANNERS = ["¡Órale!", "¡Ándale!", "¡Qué padre!", "¡Aguas!", "¡Éso!", "¡No manches!", "¡Vámonos!", "¡Chido!"];
 const game = {
   running: false,
@@ -196,7 +197,7 @@ function startWave(n) {
   //   heart — only when you've lost a life, grants one back
   //   power-up — rare, 3 words to crack, grants a timed boost
   const specials = [];
-  if (game.lives < 5 && Math.random() < 0.4) specials.push("heart");
+  if (game.lives < MAX_LIVES && Math.random() < 0.4) specials.push("heart");
   if (n >= 2 && Math.random() < 0.3) specials.push(pick(["shield", "slow", "double"]));
   for (const sp of specials) {
     const at = Math.min(game.queue.length, 2 + Math.floor(Math.random() * Math.max(1, game.queue.length - 2)));
@@ -262,30 +263,60 @@ function spawnEnemy(entry) {
 }
 
 // ── Boss ─────────────────────────────────────────────────────────
+// Conjugation difficulty ramps: present only at wave 5, preterite from 10,
+// future only deep in endless. Verbs are limited to ones you've met, and
+// early bosses favour the regular verbs so the patterns are learnable.
+const REGULAR_VERBS = ["hablar", "comer", "vivir"];
+const PERSON_EN = { "yo": "I", "tú": "you", "él/ella": "he/she", "nosotros": "we", "ellos": "they" };
+const TENSE_TAG = { presente: "ahora", "pretérito": "pasado", futuro: "futuro" };
+
+function bossTenses(wave) {
+  if (wave >= 15) return ["presente", "presente", "pretérito", "futuro"];
+  if (wave >= 10) return ["presente", "pretérito"];
+  return ["presente"];
+}
+function bossVerbPool(wave) {
+  const brain = active().brain;
+  let pool = BOSS_VERBS.filter((v) => brain.info(v.inf));   // verbs met as vocab
+  if (wave < 10) {                                           // early: regular patterns
+    const reg = pool.filter((v) => REGULAR_VERBS.includes(v.inf));
+    if (reg.length) pool = reg;
+  }
+  if (pool.length < 2) pool = BOSS_VERBS.filter((v) => REGULAR_VERBS.includes(v.inf));
+  return pool.length ? pool : BOSS_VERBS;
+}
+
 function startBoss(n) {
   game.state = "boss";
   game.boss = {
-    hp: 6 + (n / 5) * 2, maxHp: 6 + (n / 5) * 2,
+    hp: 4 + Math.floor(n / 5), maxHp: 4 + Math.floor(n / 5),
     x: W / 2, y: 120, t: 0,
     art: BOSS_ART[(Math.floor(n / 5) - 1) % BOSS_ART.length],
-    promptTime: Math.max(6, 13 - n * 0.3),
+    promptTime: Math.max(8, 16 - n * 0.3),
     verb: null, tense: null, personIdx: 0, timeLeft: 0,
   };
   nextBossPrompt();
-  showBanner("JEFE — BOSS FIGHT");
+  showBanner("JEFE — CONJUGA EL VERBO");
   ui.wave.textContent = `Wave ${n} — BOSS`;
   sfx.wave();
 }
 function nextBossPrompt() {
   const b = game.boss;
-  b.verb = BOSS_VERBS[Math.floor(Math.random() * BOSS_VERBS.length)];
-  b.tense = BOSS_TENSES[Math.floor(Math.random() * BOSS_TENSES.length)];
+  const pool = bossVerbPool(game.wave);
+  b.verb = pool[Math.floor(Math.random() * pool.length)];
+  const tenses = bossTenses(game.wave);
+  b.tense = tenses[Math.floor(Math.random() * tenses.length)];
   b.personIdx = Math.floor(Math.random() * BOSS_PERSONS.length);
   b.timeLeft = b.promptTime;
 }
 function bossAnswer() {
   const b = game.boss;
   return b.verb[b.tense][b.personIdx];
+}
+// plain-English scaffold, e.g. "they — have (pasado)"
+function bossGloss(b) {
+  const base = b.verb.en.replace(/^to /, "");
+  return `${PERSON_EN[BOSS_PERSONS[b.personIdx]]} — ${base} (${TENSE_TAG[b.tense]})`;
 }
 
 // ── Scoring / lives ──────────────────────────────────────────────
@@ -328,8 +359,8 @@ function loseLife() {
   if (game.lives <= 0) endGame(false);
 }
 function gainLife() {
-  if (game.lives >= 5) return false;
-  game.lives++;
+  if (game.lives >= MAX_LIVES) return false;
+  game.lives = Math.min(MAX_LIVES, game.lives + 1);
   ui.lives.textContent = "❤️".repeat(game.lives);
   popups.push({ x: ship.x, y: ship.y - 40, text: "+1 ❤️", t: 1.2, color: "#ff8fa3" });
   return true;
@@ -862,16 +893,20 @@ function drawBoss() {
   ctx.textAlign = "center";
   ctx.fillStyle = "#ffd166";
   ctx.font = "800 30px 'Segoe UI', sans-serif";
-  ctx.fillText(`${BOSS_PERSONS[b.personIdx]} + ${b.verb.inf}`, W / 2, 240);
+  ctx.fillText(`${BOSS_PERSONS[b.personIdx]} + ${b.verb.inf}`, W / 2, 232);
   ctx.fillStyle = "#9fb4dd";
-  ctx.font = "600 20px 'Segoe UI', sans-serif";
-  ctx.fillText(`${b.tense} · (${b.verb.en})`, W / 2, 272);
+  ctx.font = "600 19px 'Segoe UI', sans-serif";
+  ctx.fillText(`${b.tense} · (${b.verb.en})`, W / 2, 262);
+  // plain-English scaffold so you know the meaning you're producing
+  ctx.fillStyle = "#f5eeda";
+  ctx.font = "600 16px 'Segoe UI', sans-serif";
+  ctx.fillText(`≈ "${bossGloss(b)}"`, W / 2, 288);
 
   const tw = 320, tf = Math.max(0, b.timeLeft / b.promptTime);
   ctx.fillStyle = "#1e2a45";
-  roundRect(W / 2 - tw / 2, 296, tw, 10, 5); ctx.fill();
+  roundRect(W / 2 - tw / 2, 306, tw, 10, 5); ctx.fill();
   ctx.fillStyle = tf > 0.35 ? "#35e08f" : "#ff5d5d";
-  if (tf > 0) { roundRect(W / 2 - tw / 2, 296, tw * tf, 10, 5); ctx.fill(); }
+  if (tf > 0) { roundRect(W / 2 - tw / 2, 306, tw * tf, 10, 5); ctx.fill(); }
 }
 
 // ── Public API ───────────────────────────────────────────────────

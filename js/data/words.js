@@ -83,6 +83,8 @@ export const WORDS = [
   { es: "comer", en: ["to eat", "eat"], cat: "verb", ej: ["Vamos a comer tacos.", "Let's go eat tacos."] },
   { es: "vivir", en: ["to live", "live"], cat: "verb", ej: ["Queremos vivir cerca de la playa.", "We want to live near the beach."] },
   { es: "tener", en: ["to have", "have"], cat: "verb", ej: ["Tengo dos gatos y un perro.", "I have two cats and a dog."] },
+  { es: "ser", en: ["to be"], cat: "verb", ej: ["Quiero ser mejor en español.", "I want to be better at Spanish."] },
+  { es: "estar", en: ["to be"], cat: "verb", ej: ["¿Dónde estás?", "Where are you?"] },
   { es: "hacer", en: ["to do", "do", "to make", "make"], cat: "verb", ej: ["¿Qué vas a hacer hoy?", "What are you going to do today?"] },
   { es: "ir", en: ["to go", "go"], cat: "verb", ej: ["Vamos a ir al mercado.", "We're going to go to the market."] },
   { es: "venir", en: ["to come", "come"], cat: "verb", ej: ["¿Puedes venir a la fiesta?", "Can you come to the party?"] },
