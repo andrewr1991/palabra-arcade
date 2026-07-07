@@ -161,6 +161,7 @@ function setEnemyWord(e, word, reverse) {
   e.word = word;
   e.reverse = reverse;
   e.display = reverse ? word.en[0] : word.es;
+  e.hint = !active().brain.info(word.es) ? (reverse ? word.es : word.en[0]) : null;
   ctx.font = "700 17px 'Segoe UI', sans-serif";
   e.w = Math.max(74, ctx.measureText(e.display).width + 40);
   e.answerSet = answerSetFor(word, reverse);
@@ -213,18 +214,23 @@ function showBanner(text) {
   game.bannerTimer = 2.0;
 }
 
+// mechanical toughness (armor / multi-hit) is gated by wave so early
+// levels stay gentle for everyone regardless of vocabulary
+const ARMOR_FROM_WAVE = 4;
+
 function spawnEnemy(entry) {
   const special = entry.special || null;
   let reverse = !!entry.reverse;
   let word = entry.word || nextWordFor(special);
   if (!entry.word) reverse = false;            // sourced words shown ES→EN
 
+  // reward tier (familiarity) drives colour + points; it only becomes an
+  // armored, multi-hit *threat* once the player has a few waves of footing
   const tier = special ? 0 : wordTier(word.es);
-  const armored = !special && tier === 2;
-  // hp = correct words needed to destroy: hearts 2, power-ups 3, armored 2-3
+  const armored = !special && tier === 2 && game.wave >= ARMOR_FROM_WAVE;
   const hp = special === "heart" ? 2
     : special ? 3
-    : armored ? (game.wave >= 7 ? 3 : 2) : 1;
+    : armored ? (game.wave >= 8 ? 3 : 2) : 1;
   const kind = special === "heart" ? "bonus"
     : special ? special
     : reverse ? "reverse"
@@ -232,8 +238,8 @@ function spawnEnemy(entry) {
     : tier === 1 ? "learning" : "normal";
   const perHit = special === "heart" ? 12 : special ? 14
     : ([10, 18, 30][tier] + (reverse ? 6 : 0));
-  const tierSpeed = special === "heart" ? 1.7 : special ? 1.28
-    : armored ? 1.3 : [1, 1.12, 1.3][tier];
+  // speed comes mostly from the wave; only genuine armored foes get a bump
+  const tierSpeed = special === "heart" ? 1.6 : special ? 1.25 : armored ? 1.2 : 1;
   const speed = (16 + game.wave * 3.5) * (0.85 + Math.random() * 0.3) * tierSpeed;
 
   ctx.font = "700 17px 'Segoe UI', sans-serif";
@@ -243,6 +249,8 @@ function spawnEnemy(entry) {
   const enemy = {
     word, reverse, display, w, kind, tier, armored, special,
     hp, hpMax: hp, points: perHit, flash: 0,
+    // brand-new words show a first-exposure hint so beginners learn by doing
+    hint: !active().brain.info(word.es) ? (reverse ? word.es : word.en[0]) : null,
     icon: PU_ICON[special] || null,
     art: special && special !== "heart" ? null : pick(ENEMY_ART[kind]),
     x: 40 + w / 2 + Math.random() * (W - 80 - w),
@@ -294,6 +302,12 @@ function addScore(base, x, y, color) {
   game.combo++;
   game.bestCombo = Math.max(game.bestCombo, game.combo);
   if (game.combo >= 3) sfx.combo(game.combo);
+  // milestone flourish at every 5th kill of a streak
+  if (game.combo % 5 === 0) {
+    const cheer = game.combo >= 20 ? "¡IMPARABLE!" : game.combo >= 15 ? "¡EN LLAMAS! 🔥"
+      : game.combo >= 10 ? "¡QUÉ RACHA!" : "¡COMBO ×5!";
+    popups.push({ x: W / 2, y: 180, text: `${cheer}  (${game.combo})`, t: 1.3, color: "#f7b32b" });
+  }
   updateCombo();
 }
 function updateCombo() {
@@ -680,13 +694,19 @@ function render() {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   for (const e of game.enemies) {
-    const edge = enemyColor(e);
+    let edge = enemyColor(e);
     const glow = KIND_GLOW[e.special === "heart" ? "bonus" : e.kind] || "rgba(106,190,48,0.45)";
     const heart = e.special === "heart";
+    // danger telegraph: enemies close to the line pulse red so you know
+    // what to prioritize
+    const danger = e.y > ship.y - 120;
+    let border = 2;
+    if (danger) { edge = Math.sin(game.time * 12) > 0 ? "#ff4040" : edge; border = 3; }
     if (e.flash > 0) ctx.globalAlpha = 0.45 + 0.55 * Math.abs(Math.sin(e.flash * 40));
     // top graphic: power-up icon, or creature (hearts pulse)
     const pulse = heart ? 44 + Math.sin(e.wobble * 3) * 5 : 44;
-    ctx.shadowColor = glow; ctx.shadowBlur = e.special ? 20 : 12;
+    ctx.shadowColor = danger ? "rgba(255,64,64,0.6)" : glow;
+    ctx.shadowBlur = danger ? 18 : e.special ? 20 : 12;
     const drew = e.icon ? drawArt(e.icon, e.x, e.y - 26, 40) : drawArt(e.art, e.x, e.y - 26, pulse);
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
@@ -708,14 +728,20 @@ function render() {
       ctx.fillStyle = edge; ctx.shadowColor = glow; ctx.shadowBlur = 14;
       roundRect(e.x - pw / 2, e.y - 15, pw, 30, 15); ctx.fill(); ctx.shadowBlur = 0;
       ctx.fillStyle = "#fff"; ctx.fillText(label, e.x, e.y + 1);
-      continue;
+    } else {
+      ctx.fillStyle = "#f5eeda";
+      ctx.strokeStyle = edge; ctx.lineWidth = border;
+      roundRect(e.x - pw / 2, e.y - 2, pw, 26, 8); ctx.fill(); ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.fillStyle = "#2a1c10";
+      ctx.fillText(label, e.x, e.y + 11);
     }
-    ctx.fillStyle = "#f5eeda";
-    ctx.strokeStyle = edge; ctx.lineWidth = 2;
-    roundRect(e.x - pw / 2, e.y - 2, pw, 26, 8); ctx.fill(); ctx.stroke();
-    ctx.lineWidth = 1;
-    ctx.fillStyle = "#2a1c10";
-    ctx.fillText(label, e.x, e.y + 11);
+    // first-exposure hint for brand-new words
+    if (e.hint) {
+      ctx.font = "600 12px 'Segoe UI', sans-serif";
+      ctx.fillStyle = "rgba(245,238,218,0.62)";
+      ctx.fillText("→ " + e.hint, e.x, e.y + (drew ? 30 : 26));
+    }
   }
 
   if (game.state === "boss" && game.boss) drawBoss();
