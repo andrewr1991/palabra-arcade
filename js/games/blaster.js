@@ -83,6 +83,7 @@ const sfx = {
   hurt() { tone(120, 0.3, "sawtooth", 0.12); tone(90, 0.35, "sawtooth", 0.1, 0.1); },
   wave() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.14, "triangle", 0.08, i * 0.09)); },
   combo(c) { tone(440 + Math.min(c, 30) * 28, 0.07, "square", 0.045); },
+  hit() { tone(1568, 0.05, "square", 0.05); tone(2093, 0.06, "sine", 0.04, 0.02); },
   life() { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.12, "triangle", 0.09, i * 0.07)); },
   bossHit() { tone(220, 0.1, "square", 0.1); tone(440, 0.12, "square", 0.08, 0.05); },
   bossDie() { [784, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.16, "triangle", 0.09, i * 0.1)); },
@@ -92,6 +93,7 @@ const sfx = {
 // ── State ────────────────────────────────────────────────────────
 const MAX_LIVES = 5;
 const BANNERS = ["¡Órale!", "¡Ándale!", "¡Qué padre!", "¡Aguas!", "¡Éso!", "¡No manches!", "¡Vámonos!", "¡Chido!"];
+const CHEERS = ["¡Bien!", "¡Eso!", "¡Órale!", "¡Chido!", "¡Va!", "¡Sí!"];
 const game = {
   running: false,
   state: "idle", pausedFrom: "playing",
@@ -189,22 +191,23 @@ function startWave(n) {
   if (n % 5 === 0) { startBoss(n); return; }
   game.state = "playing";
   const count = 6 + n * 2;
-  const reverseChance = n >= 3 ? 0.25 : 0;
+  // gentle ramp: basics only for waves 1-2, reverse from wave 3, armor at 4
+  const reverseChance = n >= 3 ? 0.2 : 0;
   game.queue = pickWaveWords(count).map((p) => ({
     ...p, reverse: Math.random() < reverseChance,
   }));
   // special enemies (word-less: they source their own words):
-  //   heart — only when you've lost a life, grants one back
-  //   power-up — rare, 3 words to crack, grants a timed boost
+  //   heart — only when you've lost a life, grants one back (wave 2+)
+  //   power-up — rare, 3 words to crack, grants a timed boost (wave 3+)
   const specials = [];
-  if (game.lives < MAX_LIVES && Math.random() < 0.4) specials.push("heart");
-  if (n >= 2 && Math.random() < 0.3) specials.push(pick(["shield", "slow", "double"]));
+  if (n >= 2 && game.lives < MAX_LIVES && Math.random() < 0.4) specials.push("heart");
+  if (n >= 3 && Math.random() < 0.3) specials.push(pick(["shield", "slow", "double"]));
   for (const sp of specials) {
     const at = Math.min(game.queue.length, 2 + Math.floor(Math.random() * Math.max(1, game.queue.length - 2)));
     game.queue.splice(at, 0, { special: sp });
   }
   game.spawnInterval = Math.max(0.9, 3.1 - n * 0.2);
-  game.spawnTimer = 1.2;
+  game.spawnTimer = 0.5;            // first enemy lands almost immediately
   showBanner(`WAVE ${n} — ${BANNERS[(n - 1) % BANNERS.length]}`);
   sfx.wave();
 }
@@ -212,7 +215,24 @@ function startWave(n) {
 function showBanner(text) {
   ui.bannerText.textContent = text;
   ui.banner.classList.remove("hidden");
-  game.bannerTimer = 2.0;
+  game.bannerTimer = 1.3;           // quick, exciting — not a pause
+}
+
+// Pepe's friendly in-game line — brief, non-intrusive (top bubble)
+let pepeTimer = null;
+function pepeSay(text, mood = "happy") {
+  const el = $("bl-pepe");
+  if (!el) return;
+  $("bl-pepe-img").src = `assets/ui/pepe-${mood}.png`;
+  $("bl-pepe-text").textContent = text;
+  el.classList.remove("hidden");
+  clearTimeout(pepeTimer);
+  pepeTimer = setTimeout(() => el.classList.add("hidden"), 3600);
+}
+function pepeHide() {
+  const el = $("bl-pepe");
+  if (el) el.classList.add("hidden");
+  clearTimeout(pepeTimer);
 }
 
 // mechanical toughness (armor / multi-hit) is gated by wave so early
@@ -395,6 +415,7 @@ function explode(x, y, color, n = 16, style = Math.floor(Math.random() * 4)) {
 }
 function fireLaser(tx, ty) {
   lasers.push({ x1: ship.x, y1: ship.y - 18, x2: tx, y2: ty, t: 0.15 });
+  rings.push({ x: ship.x, y: ship.y - 18, r: 2, max: 12, life: 0.14, color: "#bdeaff" });
 }
 
 // ── Input ────────────────────────────────────────────────────────
@@ -428,7 +449,7 @@ function hitEnemy(e) {
   e.hp--;
 
   if (e.hp > 0) {                              // crack a layer, next word
-    explode(e.x, e.y - 18, col, 9, 2);
+    explode(e.x, e.y - 18, col, 10, 2);        // ring+spokes crack
     sfx.bossHit();
     e.flash = 0.3;
     const next = nextWordFor(e.special);
@@ -437,16 +458,20 @@ function hitEnemy(e) {
     return;
   }
 
-  // destroyed
+  // destroyed — the satisfying moment: bigger burst, ring, tiny shake, ping
   game.enemies.splice(game.enemies.indexOf(e), 1);
-  explode(e.x, e.y, col);
-  sfx.kill();
+  explode(e.x, e.y, col, 20, 1);               // ring + spray
+  rings.push({ x: e.x, y: e.y, r: 6, max: 40, life: 0.4, color: "#ffffff" });
+  game.shake = Math.max(game.shake, 0.12);     // kill-only micro-shake
+  sfx.kill(); sfx.hit();
   if (e.special === "heart") {
     if (gainLife()) { explode(e.x, e.y, "#f7b32b", 30, 3); sfx.life(); }
   } else if (e.special) {
     applyPowerUp(e.special, e.x, e.y);
   } else if (tierBefore >= 1 && wordTier(e.word.es) < tierBefore) {
     popups.push({ x: e.x, y: e.y - 18, text: "¡la dominas! ↓", t: 1.6, color: "#6abe30" });
+  } else if (Math.random() < 0.4) {            // occasional cheer — not every kill
+    popups.push({ x: e.x, y: e.y - 22, text: pick(CHEERS), t: 0.7, color: "#f5eeda" });
   }
   maybeEndWave();
 }
@@ -509,6 +534,7 @@ function waveCleared() {
       showBanner("¡OLEADA PERFECTA! +❤️");
       explode(ship.x, ship.y - 30, "#f7b32b", 40, 3);
       sfx.life();
+      pepeSay("¡Oleada perfecta!", "excited");
     }
   }
   if (game.wave === 10 && !game.endless) {
@@ -524,6 +550,7 @@ function waveCleared() {
 
 function endGame(won) {
   game.state = "over";
+  pepeHide();
   sfx.gameOver();
   const data = active().data;
   if (game.score > data.blasterHigh) data.blasterHigh = game.score;
@@ -533,24 +560,42 @@ function endGame(won) {
   const s = game.session;
   const answered = s.correct + s.wrong + s.landed;
   const acc = answered ? Math.round((s.correct / answered) * 100) : 0;
-  ui.overTitle.textContent = won ? "¡QUÉ PADRE!" : "GAME OVER";
+  ui.overTitle.textContent = won ? "¡QUÉ PADRE!" : "FIN DE PARTIDA";
   ui.overStats.textContent =
-    `Score ${game.score} (best ${data.blasterHigh}) · Wave ${game.wave} · ` +
-    `Accuracy ${acc}% · +${xp} XP${leveledUp ? " · ¡LEVEL UP!" : ""}`;
+    `Puntos ${game.score} (récord ${data.blasterHigh}) · Oleada ${game.wave} · ` +
+    `Precisión ${acc}% · +${xp} XP${leveledUp ? " · ¡SUBISTE DE NIVEL!" : ""}`;
+
+  // missed-word review — Spanish first, capped to the most recent handful
   if (s.missed.size) {
     ui.overReview.classList.remove("hidden");
     ui.overMissed.innerHTML = "";
-    for (const [es, w] of s.missed) {
+    const entries = [...s.missed];
+    const MAX = 6;
+    for (const [es, w] of entries.slice(0, MAX)) {
       const div = document.createElement("div");
       div.className = "missed-word";
       div.innerHTML = `<b></b> <span></span>`;
       div.querySelector("b").textContent = es;
-      div.querySelector("span").textContent = "— " + w.en[0];
+      div.querySelector("span").textContent = w.en[0];
       ui.overMissed.appendChild(div);
+    }
+    if (entries.length > MAX) {
+      const more = document.createElement("div");
+      more.className = "missed-more";
+      more.textContent = `+${entries.length - MAX} más`;
+      ui.overMissed.appendChild(more);
     }
   } else {
     ui.overReview.classList.add("hidden");
   }
+
+  // Pepe's parting line — celebrate a level-up, else nudge review, else praise
+  const pepeLine = leveledUp ? "¡Subiste de nivel!"
+    : s.missed.size ? "Repasa estas y vuelve a intentarlo."
+    : (won || acc >= 80) ? "¡Qué partida!"
+    : "¡Ándale, otra vez!";
+  $("bl-over-pepe").textContent = pepeLine;
+
   ui.over.classList.remove("hidden");
 }
 
@@ -572,6 +617,7 @@ function newGame() {
   ui.input.value = "";
   ui.input.focus();
   startWave(1);
+  pepeSay("¡Vamos! Traduce y dispara.", "excited");
 }
 
 function togglePause() {
@@ -616,7 +662,9 @@ function update(dt) {
   }
 
   if (game.state === "playing") {
-    if (game.bannerTimer <= 0 && game.queue.length) {
+    // spawn on the spawn timer alone — enemies appear while the banner
+    // is still fading (they fall from the top; the banner sits mid-screen)
+    if (game.queue.length) {
       game.spawnTimer -= dt;
       if (game.spawnTimer <= 0) {
         spawnEnemy(game.queue.shift());
@@ -713,8 +761,15 @@ function render() {
   ctx.setLineDash([]);
 
   for (const l of lasers) {
-    ctx.strokeStyle = `rgba(53,224,143,${l.t / 0.15})`;
-    ctx.lineWidth = 3;
+    const a = l.t / 0.15;
+    ctx.strokeStyle = `rgba(53,224,143,${a})`;
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(l.x1, l.y1);
+    ctx.lineTo(l.x2, l.y2);
+    ctx.stroke();
+    ctx.strokeStyle = `rgba(255,255,255,${a})`;   // bright core
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(l.x1, l.y1);
     ctx.lineTo(l.x2, l.y2);
@@ -980,6 +1035,7 @@ function quit() {
   }
   game.running = false;
   game.state = "idle";
+  pepeHide();
   ui.over.classList.add("hidden");
   ui.victory.classList.add("hidden");
   deps.onExit();
