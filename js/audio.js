@@ -50,6 +50,14 @@ export function currentVoice() {
   return ranked[0] || null;
 }
 
+// Best-effort check that the player will actually HEAR spoken words:
+// volume up, speech synthesis present, and a Spanish voice available.
+// (Family recordings, if any, also play — this is the safe lower bound.)
+export function canSpeak() {
+  refresh();
+  return getSettings().ttsVol > 0 && !!window.speechSynthesis && ranked.length > 0;
+}
+
 export async function speak(text, rateOverride) {
   const cfg = getSettings();
   if (cfg.ttsVol <= 0) return;

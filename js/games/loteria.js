@@ -4,7 +4,7 @@
 
 import { allWords } from "../customwords.js";
 import { active, addXP, saveNow } from "../profile.js";
-import { speak } from "../audio.js";
+import { speak, canSpeak } from "../audio.js";
 import { shuffle } from "../brain.js";
 
 const SIZE = 16;
@@ -25,7 +25,13 @@ export function initLoteria(dependencies) {
   $("lt-quit").addEventListener("click", quit);
   $("lt-again").addEventListener("click", startRound);
   $("lt-back").addEventListener("click", quit);
-  $("lt-repeat").addEventListener("click", () => { if (current) speak(current.es); });
+  $("lt-repeat").addEventListener("click", () => {
+    if (!current) return;
+    speak(current.es);
+    // the replay button also reveals the word on demand (safety net for TTS)
+    $("lt-called").textContent = current.es;
+    $("lt-called").classList.remove("lt-listening");
+  });
 }
 
 export function enterLoteria() { startRound(); }
@@ -67,16 +73,23 @@ function callNext() {
   if (!playing) return;
   current = queue[0] || null;
   if (!current) return;
-  $("lt-called").textContent = "…";
-  $("lt-called").classList.add("lt-listening");
-  speak(current.es);
-  // audio-first: show the written word a beat later
   clearTimeout(revealTimer);
-  revealTimer = setTimeout(() => {
-    if (!playing || !current) return;
+  speak(current.es);
+  if (canSpeak()) {
+    // audio-first (listening practice): hear it, then reveal the text shortly
+    // after — the reveal always fires, so a silent/failed voice can't stall play
+    $("lt-called").textContent = "…";
+    $("lt-called").classList.add("lt-listening");
+    revealTimer = setTimeout(() => {
+      if (!playing || !current) return;
+      $("lt-called").textContent = current.es;
+      $("lt-called").classList.remove("lt-listening");
+    }, 1300);
+  } else {
+    // no voice available — reveal immediately so it plays as a reading game
     $("lt-called").textContent = current.es;
     $("lt-called").classList.remove("lt-listening");
-  }, 1400);
+  }
 }
 
 function pick(cell, el) {

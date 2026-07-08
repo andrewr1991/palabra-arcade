@@ -82,7 +82,7 @@ function renderHub() {
   $("hub-blaster-high").textContent = p.data.blasterHigh ? `high score: ${p.data.blasterHigh}` : t("playFirst");
   $("hub-match-best").textContent = p.data.matchBest ? `mejor: ${p.data.matchBest.moves} mov.` : t("playFirst");
   $("hub-loteria-meta").textContent = p.data.loteriaWins ? `${p.data.loteriaWins} 🫘` : t("runFirst");
-  $("hub-palabrle-meta").textContent = p.data.palabrleWins ? `${p.data.palabrleWins} 🟩` : t("dailyReady");
+  $("hub-palabrle-meta").textContent = "reto diario · pronto";   // Próximamente (v1.1)
   $("hub-clasificador-meta").textContent = p.data.clasificadorBest ? `mejor: ${p.data.clasificadorBest} pts` : t("keys123");
   $("hub-ahorcado-meta").textContent = p.data.ahorcadoWins ? `${p.data.ahorcadoWins} 💀` : t("niModo");
 
@@ -435,7 +435,10 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
 }
 
 $("card-loteria").addEventListener("click", () => { showScreen("loteria"); enterLoteria(); });
-$("card-palabrle").addEventListener("click", () => { showScreen("palabrle"); enterPalabrle(); });
+// Palabrle is held for v1.1 — its cabinet shows "Próximamente" and is not playable yet
+$("card-palabrle").addEventListener("click", () =>
+  askDialog("Palabrle — ¡Próximamente! El reto diario de la palabra llega en una próxima actualización."));
+// Clasificador is hidden from the launch flow (card has .launch-hidden); handler kept for easy re-enable
 $("card-clasificador").addEventListener("click", () => { showScreen("clasificador"); enterClasificador(); });
 $("card-ahorcado").addEventListener("click", () => { showScreen("ahorcado"); enterAhorcado(); });
 $("card-nuevas").addEventListener("click", () => { showScreen("nuevas"); enterNuevas(); });

@@ -635,6 +635,21 @@ button { font-family: inherit; }
 }
 #lt-called { font-size: 26px; font-weight: 800; color: var(--gold); flex: 1; }
 #lt-called.lt-listening { color: var(--muted); animation: pulse 0.5s infinite alternate; }
+.lt-repeat-btn {
+  flex-shrink: 0;
+  background: var(--neon);
+  color: #08111f;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 9px 16px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #1d4d1f;
+}
+.lt-repeat-btn:hover { filter: brightness(1.08); }
+.lt-repeat-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #1d4d1f; }
 #lt-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1128,6 +1143,32 @@ button { font-family: inherit; }
 }
 .game-card.cab .game-meta { padding: 6px 12px 2px; }
 .game-card.cab:hover { border-color: var(--gold); transform: translateY(-4px); }
+
+/* hidden from launch (kept in DOM for easy re-enable) */
+.launch-hidden { display: none !important; }
+
+/* "Próximamente" cabinet — visible but clearly not-yet-playable */
+.game-card.cab.coming-soon { position: relative; cursor: default; }
+.game-card.cab.coming-soon img { filter: grayscale(0.7) brightness(0.55); }
+.game-card.cab.coming-soon:hover { border-color: var(--border); transform: none; }
+.game-card.cab.coming-soon .game-meta { color: var(--muted); }
+.cs-badge {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-4deg);
+  z-index: 2;
+  background: var(--gold);
+  color: #2a1c10;
+  font-family: var(--pixel-font);
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 2px solid #7a3b12;
+  white-space: nowrap;
+  pointer-events: none;
+}
 #hub-nav {
   display: flex;
   justify-content: center;
