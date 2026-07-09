@@ -32,18 +32,18 @@ export function fxPop(name) {
   setTimeout(() => img.remove(), 1300);
 }
 
-// short arcade "boop" for cabinet hovers
+// short arcade "boop" — reusable chip-tone (hovers, picks, dings)
 let bctx = null;
-export function boop(vol = 0.05) {
+export function boop(vol = 0.05, freq = 620, dur = 0.09, type = "square") {
   try {
     if (!bctx) bctx = new (window.AudioContext || window.webkitAudioContext)();
     const t = bctx.currentTime;
     const o = bctx.createOscillator(), g = bctx.createGain();
-    o.type = "square"; o.frequency.value = 620;
+    o.type = type; o.frequency.value = freq;
     g.gain.setValueAtTime(vol, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
     o.connect(g); g.connect(bctx.destination);
-    o.start(t); o.stop(t + 0.09);
+    o.start(t); o.stop(t + dur);
   } catch {}
 }
 

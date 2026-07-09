@@ -272,21 +272,27 @@
 <div id="screen-loteria" class="screen hidden">
   <header class="sub-header">
     <button id="lt-quit" class="back-btn">← Salir</button>
-    <h2>Lotería</h2>
-    <span class="muted">tabla: <span id="lt-progress">0 / 16</span> · errores: <span id="lt-mistakes">0</span></span>
+    <span class="muted lt-status">tabla: <span id="lt-progress">0 / 16</span> · errores: <span id="lt-mistakes">0</span></span>
   </header>
-  <div class="lt-caller">
-    <span class="muted">el gritón dice:</span>
-    <span id="lt-called">—</span>
-    <button id="lt-repeat" class="lt-repeat-btn" title="Escuchar de nuevo">🔊 Escuchar</button>
-  </div>
-  <div class="game-stage">
-    <div id="lt-grid"></div>
-    <div id="lt-over" class="overlay hidden">
-      <h2>¡LOTERÍA!</h2>
-      <p id="lt-over-stats" class="tagline"></p>
-      <button id="lt-again" class="big-btn">OTRA TABLA</button>
-      <button id="lt-back" class="small-btn">Back to arcade</button>
+
+  <div id="lt-machine" class="lt-machine">
+    <div class="lt-marquee"><span class="lt-bulb">✦</span> LOTERÍA <span class="lt-bulb">✦</span></div>
+
+    <div id="lt-caller" class="lt-caller">
+      <span class="lt-caller-label">El gritón dice</span>
+      <span id="lt-called">—</span>
+      <button id="lt-repeat" class="lt-repeat-btn" title="Escuchar de nuevo">🔊 Escuchar</button>
+    </div>
+
+    <div class="lt-screen game-stage">
+      <div id="lt-grid"></div>
+      <div id="lt-over" class="overlay hidden">
+        <h2>¡LOTERÍA!</h2>
+        <p id="lt-over-stats" class="tagline"></p>
+        <p id="lt-over-pepe" class="over-pepe"></p>
+        <button id="lt-again" class="big-btn">OTRA TABLA</button>
+        <button id="lt-back" class="small-btn">VOLVER AL ARCADE</button>
+      </div>
     </div>
   </div>
 </div>
