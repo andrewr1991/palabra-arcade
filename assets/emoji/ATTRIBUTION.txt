@@ -1,0 +1,8 @@
+Tile artwork in these SVG files is from Twemoji.
+
+Copyright 2020 Twitter, Inc and other contributors.
+Graphics licensed under CC-BY 4.0: https://creativecommons.org/licenses/by/4.0/
+Source (maintained fork): https://github.com/jdecked/twemoji
+
+Only the emoji referenced by Palabra Arcade's word packs are included,
+fetched via assets/fetch_emoji.py.

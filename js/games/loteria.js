@@ -9,13 +9,20 @@ import { shuffle } from "../brain.js";
 import { boop, fxPop } from "../ui.js";
 import { getSettings } from "../settings.js";
 
-const SIZE = 16;
+const SIZE = 16;                 // 4×4 tabla
 const WEIGHT = 0.5;
 const CHEERS = ["¡Buena!", "¡Sí!", "¡Eso!", "¡Ándale!"];
 const PEPE_WINS = [
   "¡Lotería! ¡Como en casa de la abuela!",
   "¡Qué buena tabla, campeón!",
   "¡Eso es! Puro ojo de águila. 🦅",
+];
+// win the moment any pattern fills — rows, columns, diagonals, four corners.
+// Rounds end fast and feel like real bingo instead of a long blackout.
+const LINES = [
+  [0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15],
+  [0, 4, 8, 12], [1, 5, 9, 13], [2, 6, 10, 14], [3, 7, 11, 15],
+  [0, 5, 10, 15], [3, 6, 9, 12], [0, 3, 12, 15],
 ];
 
 let deps, bound = false;
@@ -25,6 +32,13 @@ const $ = (id) => document.getElementById(id);
 function snd(freq, vol = 0.06, dur = 0.1, type = "square") {
   const v = getSettings().sfxVol;
   if (v > 0) boop(vol * v, freq, dur, type);
+}
+
+// emoji → self-hosted Twemoji SVG filename (same rule as fetch_emoji.py):
+// drop the FE0F variation selector unless the sequence has a ZWJ.
+function emojiFile(emo) {
+  const s = emo.indexOf("‍") < 0 ? emo.replace(/️/g, "") : emo;
+  return [...s].map((c) => c.codePointAt(0).toString(16)).join("-");
 }
 
 let board = [];        // { word, marked }
@@ -74,8 +88,12 @@ function startRound() {
     const el = document.createElement("button");
     el.className = "lt-card";
     el.dataset.es = cell.word.es;
-    el.innerHTML = `<span class="lt-emo"></span><span class="lt-word">· · ·</span>`;
-    el.querySelector(".lt-emo").textContent = cell.word.emo;
+    el.innerHTML = `<span class="lt-pic"><img class="lt-img" alt="" draggable="false"></span><span class="lt-word">· · ·</span>`;
+    const img = el.querySelector(".lt-img");
+    const emo = cell.word.emo;
+    img.src = `assets/emoji/${emojiFile(emo)}.svg`;
+    // if a custom-word emoji has no self-hosted SVG, fall back to the glyph
+    img.addEventListener("error", () => { img.parentNode.classList.add("lt-pic-fallback"); img.parentNode.textContent = emo; });
     el.addEventListener("click", () => pick(cell, el));
     grid.appendChild(el);
   }
@@ -124,7 +142,8 @@ function pick(cell, el) {
   const brain = active().brain;
   if (cell.word.es === current.es) {
     cell.marked = true;
-    el.classList.add("marked");
+    el.classList.add("marked", "lt-hit");
+    setTimeout(() => el.classList.remove("lt-hit"), 400);
     el.querySelector(".lt-word").textContent = cell.word.es;
     // frijolito stamp + floating cheer + rising two-tone
     const stamp = document.createElement("span");
@@ -142,8 +161,9 @@ function pick(cell, el) {
     saveNow();
     queue.shift();
     updateStatus();
-    if (board.every((c) => c.marked)) { win(); return; }
-    callTimer = setTimeout(callNext, 700);
+    const line = winningLine();
+    if (line) { win(line); return; }
+    callTimer = setTimeout(callNext, 600);
   } else {
     mistakes++;
     updateStatus();
@@ -156,18 +176,31 @@ function pick(cell, el) {
   }
 }
 
+function winningLine() {
+  for (const line of LINES) if (line.every((i) => board[i].marked)) return line;
+  return null;
+}
+
 function updateStatus() {
   const marked = board.filter((c) => c.marked).length;
-  $("lt-progress").textContent = `${marked} / ${SIZE}`;
+  $("lt-progress").textContent = marked;
   $("lt-mistakes").textContent = mistakes;
 }
 
-function win() {
+function win(line) {
   playing = false;
-  const xp = Math.max(20, 60 - mistakes * 5);
+  clearTimeout(callTimer);
+  clearTimeout(revealTimer);
+  const marked = board.filter((c) => c.marked).length;
+  const xp = Math.max(25, 70 - mistakes * 5);
   const data = active().data;
   data.loteriaWins = (data.loteriaWins || 0) + 1;
   const { leveledUp } = addXP(xp);
+
+  // light up the winning line and reveal every tile's word (a mini review)
+  const cards = $("lt-grid").children;
+  board.forEach((c, i) => { cards[i].querySelector(".lt-word").textContent = c.word.es; });
+  if (line) line.forEach((i) => cards[i].classList.add("lt-win-cell"));
 
   // arcade payoff: marquee flash, confetti + star burst, victory arpeggio
   $("lt-machine").classList.add("lt-win-flash");
@@ -177,9 +210,12 @@ function win() {
     setTimeout(() => snd(f, 0.07, 0.15, "triangle"), i * 90));
   speak("¡Lotería!");
 
-  $("lt-over-stats").textContent =
-    `${mistakes} error${mistakes === 1 ? "" : "es"} · +${xp} XP${leveledUp ? " · ¡SUBISTE DE NIVEL!" : ""}`;
-  $("lt-over-pepe").textContent = PEPE_WINS[Math.floor(Math.random() * PEPE_WINS.length)];
-  $("lt-over").classList.remove("hidden");
+  // let the win land before the over-screen slides up
+  setTimeout(() => {
+    $("lt-over-stats").textContent =
+      `${marked} marcadas · ${mistakes} error${mistakes === 1 ? "" : "es"} · +${xp} XP${leveledUp ? " · ¡SUBISTE DE NIVEL!" : ""}`;
+    $("lt-over-pepe").textContent = PEPE_WINS[Math.floor(Math.random() * PEPE_WINS.length)];
+    $("lt-over").classList.remove("hidden");
+  }, 1100);
   deps.onSessionEnd();
 }
