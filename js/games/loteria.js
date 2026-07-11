@@ -9,7 +9,7 @@ import { shuffle } from "../brain.js";
 import { boop, fxPop } from "../ui.js";
 import { getSettings } from "../settings.js";
 
-const SIZE = 16;                 // 4×4 tabla
+const SIZE = 9;                  // 3×3 tabla
 const WEIGHT = 0.5;
 const CHEERS = ["¡Buena!", "¡Sí!", "¡Eso!", "¡Ándale!"];
 const PEPE_WINS = [
@@ -17,12 +17,12 @@ const PEPE_WINS = [
   "¡Qué buena tabla, campeón!",
   "¡Eso es! Puro ojo de águila. 🦅",
 ];
-// win the moment any pattern fills — rows, columns, diagonals, four corners.
-// Rounds end fast and feel like real bingo instead of a long blackout.
+// Win by completing any line — a row, column, or diagonal (3 in a row).
+// Clear, quick and unmistakably bingo. Errors never count toward a line.
 const LINES = [
-  [0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15],
-  [0, 4, 8, 12], [1, 5, 9, 13], [2, 6, 10, 14], [3, 7, 11, 15],
-  [0, 5, 10, 15], [3, 6, 9, 12], [0, 3, 12, 15],
+  [0, 1, 2], [3, 4, 5], [6, 7, 8],   // rows
+  [0, 3, 6], [1, 4, 7], [2, 5, 8],   // columns
+  [0, 4, 8], [2, 4, 6],              // diagonals
 ];
 
 let deps, bound = false;
@@ -73,9 +73,18 @@ function quit() {
 }
 
 function startRound() {
+  // kill any pending timers first so a stale call can't fire into the new
+  // round (this caused a leftover word to flash before the real first call)
+  clearTimeout(callTimer);
+  clearTimeout(revealTimer);
   $("lt-over").classList.add("hidden");
   playing = true;
   mistakes = 0;
+  current = null;
+  // neutral caller until the first real call — no leftover/placeholder word
+  const called = $("lt-called");
+  called.textContent = "…";
+  called.classList.remove("lt-listening", "lt-pop");
   const brain = active().brain;
   const pool = allWords().filter((w) => w.emo);
   board = brain.pickWeak(pool, SIZE).map((word) => ({ word, marked: false }));
@@ -165,11 +174,15 @@ function pick(cell, el) {
     if (line) { win(line); return; }
     callTimer = setTimeout(callNext, 600);
   } else {
-    mistakes++;
+    mistakes++;                          // one error per tap
     updateStatus();
+    // brief red buzz, then back to normal — never lingers on the board.
+    // clear any prior error timer so quick taps don't leave it stuck red.
+    clearTimeout(el._errTimer);
     el.classList.remove("shake");
     void el.offsetWidth;
     el.classList.add("shake");
+    el._errTimer = setTimeout(() => el.classList.remove("shake"), 750);
     snd(160, 0.05, 0.16, "sawtooth");   // gentle buzz, not a punishment
     brain.report(current.es, { correct: false, weight: 0.3 });
     saveNow();

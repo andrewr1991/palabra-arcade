@@ -363,25 +363,24 @@ button { font-family: inherit; }
 .missed-more { align-self: center; color: var(--muted); font-size: 13px; padding: 6px; }
 
 /* Pepe in Blaster — friendly line, non-intrusive */
+/* dedicated safe band below the HUD — never overlaps score/wave/hearts,
+   the canvas enemies, or the input bar */
 .bl-pepe {
-  position: absolute;
-  top: 8px;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 6px auto 2px;
   background: rgba(20, 16, 10, 0.82);
   border: 2px solid var(--gold);
   border-radius: 12px;
-  padding: 5px 14px 5px 6px;
-  z-index: 8;
+  padding: 4px 14px 4px 6px;
   pointer-events: none;
-  max-width: 90%;
-  transition: opacity 0.3s;
 }
 .bl-pepe.hidden { display: none !important; }
-.bl-pepe img { width: 40px; height: auto; image-rendering: pixelated; }
+.bl-pepe img { width: 34px; height: auto; image-rendering: pixelated; flex-shrink: 0; }
 #bl-pepe-text { font-size: 14px; font-weight: 600; color: var(--text); }
 .over-pepe { font-size: 15px; color: var(--gold); margin: 2px 0 6px; min-height: 18px; }
 
@@ -433,8 +432,8 @@ button { font-family: inherit; }
   #bl-hud { font-size: 16px; flex-wrap: nowrap; }
   #bl-hud #bl-wave { font-size: 14px; }
   #bl-lives { font-size: 15px; letter-spacing: 0; }
-  .bl-pepe { top: 4px; padding: 3px 10px 3px 4px; }
-  .bl-pepe img { width: 30px; }
+  .bl-pepe { padding: 3px 10px 3px 4px; margin: 4px auto 0; }
+  .bl-pepe img { width: 28px; }
   #bl-pepe-text { font-size: 12px; }
 }
 
@@ -701,6 +700,13 @@ button { font-family: inherit; }
 }
 .lt-repeat-btn:hover { filter: brightness(1.08); }
 .lt-repeat-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #1d4d1f; }
+.lt-goal {
+  text-align: center;
+  font-size: 13px;
+  color: var(--gold);
+  margin: 0 0 12px;
+  opacity: 0.9;
+}
 
 /* the machine screen: dark glass, framed by the cabinet bezel */
 .lt-screen {
@@ -712,9 +718,10 @@ button { font-family: inherit; }
 }
 #lt-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  min-height: 470px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  max-width: 440px;
+  margin: 0 auto;
 }
 
 /* tiles: framed cards with a nameplate */
@@ -1357,15 +1364,12 @@ button { font-family: inherit; }
 .nav-btn:hover img { transform: translateY(-2px); filter: brightness(1.15); }
 #pepe .pepe-img { width: 112px; image-rendering: pixelated; }
 
-/* cabinet idle bob + fx pops */
-.game-grid.grid-3 .game-card.cab { animation: cabBob 3.2s ease-in-out infinite alternate; }
-.game-grid.grid-3 .game-card.cab:nth-child(2n) { animation-delay: 0.8s; }
-.game-grid.grid-3 .game-card.cab:nth-child(3n) { animation-delay: 1.6s; }
-@keyframes cabBob {
-  from { transform: translateY(0); }
-  to { transform: translateY(-3px); }
+/* Cabinets rest still — ambient life comes from marquee bulbs and glows,
+   not the cabinet bodies moving. A small lift/glow happens on hover/focus. */
+.game-card.cab:focus-visible { border-color: var(--gold); transform: translateY(-4px); outline: none; }
+@media (prefers-reduced-motion: reduce) {
+  .lt-bulb, .lt-card.lt-win-cell, #hub-xpbar { animation: none !important; }
 }
-.game-card.cab:hover { animation-play-state: paused; }
 .fx-pop {
   position: fixed;
   top: 50%;

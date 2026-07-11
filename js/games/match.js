@@ -13,6 +13,7 @@ const $ = (id) => document.getElementById(id);
 
 let first = null, lock = false, moves = 0, matched = 0, startTime = 0, pairsRound = PAIRS;
 let mismatches = {};   // es → count of wrong pairings this round
+let finished = false;  // ensures the round's XP is awarded exactly once
 
 export function initMatch(dependencies) {
   deps = dependencies;
@@ -31,6 +32,7 @@ export function enterMatch() { startRound(); }
 function startRound() {
   $("mt-over").classList.add("hidden");
   first = null; lock = false; moves = 0; matched = 0; mismatches = {};
+  finished = false;                    // guard: XP is awarded once per round
   startTime = Date.now();
   $("mt-moves").textContent = "0";
   $("mt-found").textContent = `0 / ${PAIRS}`;
@@ -113,24 +115,30 @@ function unreveal(el) {
 }
 
 function finish() {
+  if (finished) return;                // award XP / bump stats only once
+  finished = true;
+
   const brain = active().brain;
   for (const [es, n] of Object.entries(mismatches)) {
     if (n >= 3) brain.report(es, { correct: false, weight: WEIGHT });
   }
   const secs = Math.round((Date.now() - startTime) / 1000);
-  const xp = 40 + Math.max(0, PAIRS * 3 - moves) * 3;
-  const { leveledUp } = addXP(xp);
+  const xp = 40 + Math.max(0, pairsRound * 3 - moves) * 3;
+  const { leveledUp } = addXP(xp);      // saved through profile/Brain
 
   const data = active().data;
-  if (moves === PAIRS) data.matchPerfect = true;
+  if (moves === pairsRound) data.matchPerfect = true;
   const best = data.matchBest;
   if (!best || moves < best.moves || (moves === best.moves && secs < best.secs)) {
     data.matchBest = { moves, secs };
   }
   saveNow();
   if (deps.onSessionEnd) deps.onSessionEnd();
+
+  // clear completion summary — XP earned is front and centre
   $("mt-over-stats").textContent =
-    `${moves} moves · ${secs}s · +${xp} XP${leveledUp ? " · ¡LEVEL UP!" : ""}` +
-    (data.matchBest ? ` · best: ${data.matchBest.moves} moves` : "");
+    `+${xp} XP · ${moves} movimientos · ${secs}s` +
+    (data.matchBest ? ` · mejor: ${data.matchBest.moves}` : "") +
+    (leveledUp ? " · ¡SUBISTE DE NIVEL!" : "");
   $("mt-over").classList.remove("hidden");
 }
