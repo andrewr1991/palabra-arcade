@@ -362,63 +362,157 @@ button { font-family: inherit; }
 .missed-word span { color: var(--muted); font-size: 13px; }
 .missed-more { align-self: center; color: var(--muted); font-size: 13px; padding: 6px; }
 
-/* Pepe in Blaster — friendly line, non-intrusive */
-/* dedicated safe band below the HUD — never overlaps score/wave/hearts,
-   the canvas enemies, or the input bar */
-.bl-pepe {
+/* Shared "Pepe chip" — a small non-intrusive sprite + line used by every
+   game. Each screen drops the slot into a safe band; this just styles it. */
+.pepe-chip {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   width: fit-content;
   max-width: 100%;
-  margin: 6px auto 2px;
+  margin: 6px auto 8px;
   background: rgba(20, 16, 10, 0.82);
   border: 2px solid var(--gold);
   border-radius: 12px;
   padding: 4px 14px 4px 6px;
   pointer-events: none;
+  animation: pepeChipIn 0.25s ease-out;
 }
-.bl-pepe.hidden { display: none !important; }
-.bl-pepe img { width: 34px; height: auto; image-rendering: pixelated; flex-shrink: 0; }
-#bl-pepe-text { font-size: 14px; font-weight: 600; color: var(--text); }
+.pepe-chip.hidden { display: none !important; }
+.pepe-chip .pc-img { width: 34px; height: auto; image-rendering: pixelated; flex-shrink: 0; }
+.pepe-chip .pc-text { font-size: 14px; font-weight: 600; color: var(--text); }
+@keyframes pepeChipIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .over-pepe { font-size: 15px; color: var(--gold); margin: 2px 0 6px; min-height: 18px; }
 
-/* ── Memoria ─────────────────────────────────────────────────── */
-#mt-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-  min-height: 480px;
-}
-.mcard {
-  min-height: 108px;
+/* ── Memoria (arcade machine, flip cards) ────────────────────── */
+.mt-modes { display: flex; gap: 6px; }
+.mode-btn {
   background: var(--panel-2);
-  border: 2px solid var(--border);
-  border-radius: 12px;
-  color: #3d4a68;
-  font-size: 26px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: transform 0.12s, background 0.15s, border-color 0.15s;
-  padding: 6px;
-  word-break: break-word;
-}
-.mcard:hover { transform: translateY(-2px); border-color: var(--muted); }
-.mcard.revealed { font-size: 16px; color: #fff; }
-.mcard.side-es { background: var(--neon-dim); border-color: var(--neon); }
-.mcard.side-en { background: #1d7fa8; border-color: var(--cyan); }
-.mcard.matched {
-  font-size: 16px;
+  border: 1px solid var(--border);
   color: var(--muted);
-  background: var(--panel);
-  border-color: var(--border);
-  cursor: default;
-  opacity: 0.6;
+  border-radius: 7px;
+  font-family: var(--pixel-font);
+  font-size: 8px;
+  letter-spacing: 1px;
+  padding: 7px 9px;
+  cursor: pointer;
+}
+.mode-btn.active { background: var(--gold); color: #2a1c10; border-color: #7a3b12; }
+#mt-combo { color: var(--gold); font-weight: 800; display: inline-block; }
+#mt-combo.combo-pop { animation: comboPop 0.35s ease-out; }
+@keyframes comboPop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.55); color: #fff; }
+  100% { transform: scale(1); }
 }
 
+#mt-grid {
+  display: grid;
+  gap: 12px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+#mt-grid.mt-6 { grid-template-columns: repeat(4, 1fr); }
+#mt-grid.mt-10 { grid-template-columns: repeat(5, 1fr); }
+
+/* each card is a 3D flip surface */
+.mcard {
+  aspect-ratio: 1 / 1;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  perspective: 600px;
+}
+.mc-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.35s cubic-bezier(0.3, 0.8, 0.4, 1);
+}
+.mcard.revealed .mc-inner, .mcard.matched .mc-inner { transform: rotateY(180deg); }
+.mc-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  text-align: center;
+}
+/* card back — tactile pixel motif */
+.mc-back {
+  background:
+    repeating-linear-gradient(45deg, rgba(247,179,43,0.06) 0 6px, transparent 6px 12px),
+    linear-gradient(#2c2135, #1a1726);
+  border: 2px solid #4a3a2a;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.55);
+  color: var(--gold);
+  font-size: 26px;
+}
+.mc-back::after { content: "✦"; text-shadow: 0 0 8px rgba(247, 179, 43, 0.5); }
+.mcard:hover .mc-back { border-color: var(--gold); }
+/* revealed front — ES vs EN distinct, but not which pair */
+.mc-front {
+  transform: rotateY(180deg);
+  flex-direction: column;
+  gap: 4px;
+  background: linear-gradient(#20233a, #171a2c);
+  border: 2px solid #3a4266;
+}
+.mcard.side-es .mc-front { border-color: var(--neon-dim); }
+.mcard.side-en .mc-front { border-color: #1d7fa8; }
+.mc-badge {
+  font-family: var(--pixel-font);
+  font-size: 7px;
+  letter-spacing: 1px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.mcard.side-es .mc-badge { background: var(--neon-dim); color: #08150d; }
+.mcard.side-en .mc-badge { background: #1d7fa8; color: #04121a; }
+.mc-label {
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1;
+  word-break: break-word;
+  hyphens: auto;
+}
+/* matched — locked in with a gold glow + star seal, still readable */
+.mcard.matched { cursor: default; }
+.mcard.matched .mc-front {
+  border-color: var(--gold);
+  box-shadow: 0 0 14px rgba(247, 179, 43, 0.45), inset 0 0 8px rgba(247, 179, 43, 0.15);
+  background: linear-gradient(#2a2410, #1c1708);
+}
+.mcard.matched .mc-label { color: var(--gold); }
+.mc-seal {
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  font-size: 14px;
+  animation: mcSeal 0.4s cubic-bezier(0.2, 1.6, 0.45, 1);
+}
+@keyframes mcSeal {
+  0% { transform: scale(2.2) rotate(-25deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+.mcard.wrong .mc-front { animation: shake 0.25s; border-color: var(--red) !important; box-shadow: 0 0 12px rgba(224, 79, 79, 0.45); }
+
 @media (max-width: 700px) {
-  #mt-grid { grid-template-columns: repeat(4, 1fr); }
+  #mt-grid { gap: 8px; }
+  #mt-grid.mt-6 { grid-template-columns: repeat(3, 1fr); }
+  #mt-grid.mt-10 { grid-template-columns: repeat(4, 1fr); }
+  .mc-label { font-size: 14px; }
+  .mc-back { font-size: 22px; }
   /* on short mobile layouts the game overlays are taller than the canvas —
      let them cover the full screen so buttons never collide with the input */
   #screen-blaster .overlay:not(.hidden) {
@@ -432,9 +526,9 @@ button { font-family: inherit; }
   #bl-hud { font-size: 16px; flex-wrap: nowrap; }
   #bl-hud #bl-wave { font-size: 14px; }
   #bl-lives { font-size: 15px; letter-spacing: 0; }
-  .bl-pepe { padding: 3px 10px 3px 4px; margin: 4px auto 0; }
-  .bl-pepe img { width: 28px; }
-  #bl-pepe-text { font-size: 12px; }
+  .pepe-chip { padding: 3px 10px 3px 4px; margin: 4px auto 6px; }
+  .pepe-chip .pc-img { width: 28px; }
+  .pepe-chip .pc-text { font-size: 12px; }
 }
 
 /* ── Perfil ──────────────────────────────────────────────────── */

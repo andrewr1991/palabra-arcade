@@ -6,6 +6,7 @@ import { norm, answerSetFor, inputMatches } from "../brain.js";
 import { active, addXP, saveNow } from "../profile.js";
 import { getSettings } from "../settings.js";
 import { allWords } from "../customwords.js";
+import { pepeChip, pepeChipHide } from "../pepechip.js";
 
 const W = 900, H = 640;
 let canvas, ctx, deps, bound = false;
@@ -218,22 +219,9 @@ function showBanner(text) {
   game.bannerTimer = 1.3;           // quick, exciting — not a pause
 }
 
-// Pepe's friendly in-game line — brief, non-intrusive (top bubble)
-let pepeTimer = null;
-function pepeSay(text, mood = "happy") {
-  const el = $("bl-pepe");
-  if (!el) return;
-  $("bl-pepe-img").src = `assets/ui/pepe-${mood}.png`;
-  $("bl-pepe-text").textContent = text;
-  el.classList.remove("hidden");
-  clearTimeout(pepeTimer);
-  pepeTimer = setTimeout(() => el.classList.add("hidden"), 3600);
-}
-function pepeHide() {
-  const el = $("bl-pepe");
-  if (el) el.classList.add("hidden");
-  clearTimeout(pepeTimer);
-}
+// Pepe's friendly in-game line — brief, non-intrusive (shared chip helper)
+function pepeSay(text, mood = "happy") { pepeChip($("bl-pepe"), text, mood, 3600); }
+function pepeHide() { pepeChipHide($("bl-pepe")); }
 
 // mechanical toughness (armor / multi-hit) is gated by wave so early
 // levels stay gentle for everyone regardless of vocabulary

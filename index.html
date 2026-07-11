@@ -206,10 +206,7 @@
   </div>
 
   <!-- Pepe's line lives in its own safe band below the HUD, above the canvas -->
-  <div id="bl-pepe" class="bl-pepe hidden">
-    <img id="bl-pepe-img" src="assets/ui/pepe-happy.png" alt="Pepe">
-    <span id="bl-pepe-text"></span>
-  </div>
+  <div id="bl-pepe" class="pepe-chip hidden"></div>
 
   <div class="game-stage">
     <canvas id="bl-canvas" width="900" height="640"></canvas>
@@ -254,17 +251,26 @@
 <div id="screen-match" class="screen hidden">
   <header class="sub-header">
     <button id="mt-quit" class="back-btn">← Salir</button>
-    <h2>Memoria</h2>
-    <span class="muted">movimientos: <span id="mt-moves">0</span> · pares: <span id="mt-found">0 / 10</span></span>
+    <span class="muted lt-status">movimientos: <span id="mt-moves">0</span> · pares: <span id="mt-found">0 / 6</span> · racha: <span id="mt-combo">0</span></span>
+    <span class="mt-modes">
+      <button id="mt-mode-rapida" class="mode-btn active">RÁPIDA</button>
+      <button id="mt-mode-clasica" class="mode-btn">CLÁSICA</button>
+    </span>
   </header>
 
-  <div class="game-stage">
-    <div id="mt-grid"></div>
-    <div id="mt-over" class="overlay hidden">
-      <h2>¡ÉSO!</h2>
-      <p id="mt-over-stats" class="tagline"></p>
-      <button id="mt-again" class="big-btn">OTRA VEZ</button>
-      <button id="mt-back" class="small-btn">Back to arcade</button>
+  <div id="mt-machine" class="lt-machine">
+    <div class="lt-marquee"><span class="lt-bulb">✦</span> MEMORIA <span class="lt-bulb">✦</span></div>
+    <div id="mt-pepe" class="pepe-chip hidden"></div>
+
+    <div class="lt-screen game-stage">
+      <div id="mt-grid"></div>
+      <div id="mt-over" class="overlay hidden">
+        <h2 id="mt-over-title">¡ESO!</h2>
+        <p id="mt-over-stats" class="tagline"></p>
+        <p id="mt-over-pepe" class="over-pepe"></p>
+        <button id="mt-again" class="big-btn">JUGAR OTRA VEZ</button>
+        <button id="mt-back" class="small-btn">VOLVER AL ARCADE</button>
+      </div>
     </div>
   </div>
 </div>
